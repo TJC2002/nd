@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.nd.mapper.ShareMapper">
+    
+    <select id="getShareById" resultType="com.example.nd.model.ShareLink">
+        SELECT * FROM share_links WHERE id = #{id} AND is_deleted = 0
+    </select>
+    
+    <select id="getShareByCode" resultType="com.example.nd.model.ShareLink">
+        SELECT * FROM share_links WHERE share_code = #{shareCode} AND is_deleted = 0
+    </select>
+    
+    <select id="getSharesByUserId" resultType="com.example.nd.model.ShareLink">
+        SELECT * FROM share_links WHERE user_id = #{userId} AND is_deleted = 0 ORDER BY created_at DESC
+    </select>
+    
+    <insert id="insertShare" parameterType="com.example.nd.model.ShareLink" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO share_links (user_id, file_id, share_code, password, expire_time, access_count, is_deleted, created_at, updated_at)
+        VALUES (#{userId}, #{fileId}, #{shareCode}, #{password}, #{expireTime}, 0, 0, NOW(), NOW())
+    </insert>
+    
+    <update id="updateShare" parameterType="com.example.nd.model.ShareLink">
+        UPDATE share_links
+        SET password = #{password}, expire_time = #{expireTime}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <update id="deleteShare">
+        UPDATE share_links SET is_deleted = 1, updated_at = NOW() WHERE id = #{shareId}
+    </update>
+    
+    <update id="incrementAccessCount">
+        UPDATE share_links SET access_count = access_count + 1, updated_at = NOW() WHERE id = #{shareId}
+    </update>
+</mapper>

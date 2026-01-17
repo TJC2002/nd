@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.nd.mapper.StorageMapper">
+    
+    <select id="getNodeById" resultType="com.example.nd.model.StorageNode">
+        SELECT * FROM storage_nodes WHERE id = #{id}
+    </select>
+    
+    <select id="getAllNodes" resultType="com.example.nd.model.StorageNode">
+        SELECT * FROM storage_nodes ORDER BY created_at DESC
+    </select>
+    
+    <insert id="insertNode" parameterType="com.example.nd.model.StorageNode" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO storage_nodes (node_name, storage_type, storage_path, capacity, used_space, status, created_at, updated_at)
+        VALUES (#{nodeName}, #{storageType}, #{storagePath}, #{capacity}, #{usedSpace}, #{status}, NOW(), NOW())
+    </insert>
+    
+    <update id="updateNode" parameterType="com.example.nd.model.StorageNode">
+        UPDATE storage_nodes
+        SET node_name = #{nodeName}, storage_type = #{storageType}, storage_path = #{storagePath}, capacity = #{capacity}, used_space = #{usedSpace}, status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <update id="deleteNode">
+        DELETE FROM storage_nodes WHERE id = #{nodeId}
+    </update>
+    
+    <update id="updateNodeStatus">
+        UPDATE storage_nodes SET status = #{status}, updated_at = NOW() WHERE id = #{nodeId}
+    </update>
+</mapper>

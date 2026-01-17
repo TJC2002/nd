@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # MySQL 服务
+  mysql:
+    image: mysql:8.0.36
+    container_name: nd-mysql
+    restart: always
+    environment:
+      # 数据库根密码
+      MYSQL_ROOT_PASSWORD: 123456
+      # 数据库名称
+      MYSQL_DATABASE: nd
+      # 数据库用户名
+      MYSQL_USER: nd_user
+      # 数据库用户密码
+      MYSQL_PASSWORD: 123456
+      # 字符集设置
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      # 映射到主机的3306端口
+      - "3306:3306"
+    volumes:
+      # 数据持久化
+      - mysql-data:/var/lib/mysql
+      # 配置文件
+      - ./mysql/conf:/etc/mysql/conf.d
+      # 初始化脚本
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - nd-network
+
+  # Redis 服务
+  redis:
+    image: redis:7.2.4
+    container_name: nd-redis
+    restart: always
+    environment:
+      # Redis密码
+      REDIS_PASSWORD: 123456
+    ports:
+      # 映射到主机的6380端口
+      - "6380:6379"
+    volumes:
+      # 数据持久化
+      - redis-data:/data
+      # 配置文件
+      - ./redis/conf/redis.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf
+    networks:
+      - nd-network
+
+# 数据卷定义
+volumes:
+  mysql-data:
+  redis-data:
+
+# 网络定义
+networks:
+  nd-network:
+    driver: bridge
