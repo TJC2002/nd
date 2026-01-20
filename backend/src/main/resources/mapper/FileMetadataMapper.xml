@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.nd.mapper.FileMetadataMapper">
+    
+    <select id="getFileMetadataByHash" resultType="com.example.nd.model.FileMetadata">
+        SELECT * FROM file_metadata WHERE hash_value = #{hashValue}
+    </select>
+    
+    <select id="getFileMetadataById" resultType="com.example.nd.model.FileMetadata">
+        SELECT * FROM file_metadata WHERE id = #{id}
+    </select>
+    
+    <insert id="insertFileMetadata" parameterType="com.example.nd.model.FileMetadata" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO file_metadata (hash_value, size, mime_type, storage_node_id, storage_path, cover_path, reference_count, created_at, updated_at)
+        VALUES (#{hashValue}, #{size}, #{mimeType}, #{storageNodeId}, #{storagePath}, #{coverPath}, #{referenceCount}, NOW(), NOW())
+    </insert>
+    
+    <update id="updateReferenceCount">
+        UPDATE file_metadata SET reference_count = reference_count + #{increment}, updated_at = NOW() WHERE id = #{id}
+    </update>
+    
+    <update id="updateFileMetadata" parameterType="com.example.nd.model.FileMetadata">
+        UPDATE file_metadata
+        SET size = #{size}, mime_type = #{mimeType}, storage_node_id = #{storageNodeId}, storage_path = #{storagePath}, cover_path = #{coverPath}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteFileMetadata">
+        DELETE FROM file_metadata WHERE id = #{id}
+    </delete>
+
+</mapper>

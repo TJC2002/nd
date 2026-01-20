@@ -46,7 +46,10 @@ import {
 } from '@mui/icons-material'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme as useAppTheme } from '../../context/ThemeContext'
+import { useUpload } from '../../context/UploadContext'
 import ThemeSwitcher from '../../components/ThemeSwitcher'
+import UploadDialog from '../../components/upload/UploadDialog'
+import UploadPopover from '../../components/upload/UploadPopover'
 import FileManagement from './FileManagement'
 import Placeholder from './Placeholder'
 import './Home.css'
@@ -54,6 +57,7 @@ import './Home.css'
 const Home = () => {
   const { user, logout } = useAuth()
   const { mode, colorTheme, effectiveMode } = useAppTheme()
+  const { dialogOpen, popoverOpen, setPopoverOpen, getActiveTasks } = useUpload()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const navigate = useNavigate()
@@ -62,6 +66,7 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [notifications, setNotifications] = useState(3)
   const [anchorEl, setAnchorEl] = useState(null)
+  const [uploadAnchorEl, setUploadAnchorEl] = useState(null)
 
   const handleTabChange = (tab) => {
     setActiveTab(tab)
@@ -74,6 +79,16 @@ const Home = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null)
+  }
+
+  const handleUploadClick = (event) => {
+    setUploadAnchorEl(event.currentTarget)
+    setPopoverOpen(true)
+  }
+
+  const handleUploadPopoverClose = () => {
+    setUploadAnchorEl(null)
+    setPopoverOpen(false)
   }
 
   const renderContent = () => {
@@ -155,6 +170,36 @@ const Home = () => {
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <ThemeSwitcher />
+            <Tooltip title="上传任务">
+              <Box sx={{ position: 'relative' }}>
+                <IconButton
+                  color="inherit"
+                  onClick={handleUploadClick}
+                  onMouseEnter={handleUploadClick}
+                >
+                  <CloudUploadOutlined />
+                </IconButton>
+                {getActiveTasks().length > 0 && (
+                  <Box sx={{
+                    position: 'absolute',
+                    top: -5,
+                    right: -5,
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    borderRadius: '50%',
+                    minWidth: '16px',
+                    height: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                  }}>
+                    {getActiveTasks().length}
+                  </Box>
+                )}
+              </Box>
+            </Tooltip>
             <Tooltip title="通知">
               <IconButton color="inherit">
                 <Box sx={{ position: 'relative' }}>
@@ -330,6 +375,8 @@ const Home = () => {
           <ListItemText>账户设置</ListItemText>
         </MenuItem>
       </Menu>
+      <UploadDialog />
+      <UploadPopover anchorEl={uploadAnchorEl} onClose={handleUploadPopoverClose} />
     </Box>
   )
 }

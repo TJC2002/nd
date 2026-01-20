@@ -44,46 +44,18 @@ public class FileServiceImpl implements FileService {
         }
 
         String originalFilename = file.getOriginalFilename();
-        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String fileHash = calculateFileHash(file);
         
         File tempFile = new File();
         tempFile.setUserId(userId);
-        tempFile.setParentFolderId(parentFolderId);
-        tempFile.setFileName(originalFilename);
-        tempFile.setOriginalName(originalFilename);
-        tempFile.setFileSize(file.getSize());
-        tempFile.setMimeType(file.getContentType());
-        tempFile.setFileHash(fileHash);
-        
-        String storageType = storageService.selectStorageNode(tempFile);
-        String storagePath = STORAGE_BASE_PATH + userId + "/" + fileHash + fileExtension;
-        
-        tempFile.setStoragePath(storagePath);
-        tempFile.setStorageType(storageType);
-        tempFile.setVersion(1L);
-        tempFile.setIsDeleted(false);
+        tempFile.setParentId(parentFolderId != null ? parentFolderId : 0L);
+        tempFile.setName(originalFilename);
+        tempFile.setIsFolder(false);
         tempFile.setCreatedAt(LocalDateTime.now());
         tempFile.setUpdatedAt(LocalDateTime.now());
 
-        try {
-            Path filePath = Paths.get(storagePath);
-            if (!Files.exists(filePath)) {
-                Files.createDirectories(filePath.getParent());
-            }
-            Files.copy(file.getInputStream(), filePath);
-
-            fileMapper.insertFile(tempFile);
-            
-            Long nodeId = getStorageNodeId(storageType);
-            if (nodeId != null) {
-                storageService.updateUsedSpace(nodeId, file.getSize());
-            }
-            
-            return convertToFileInfo(tempFile);
-        } catch (IOException e) {
-            throw new RuntimeException("File upload failed", e);
-        }
+        fileMapper.insertFile(tempFile);
+        
+        return convertToFileInfo(tempFile);
     }
 
     @Override
@@ -108,6 +80,33 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    public List<FileInfo> getFolderPath(Long folderId, Long userId) {
+        List<FileInfo> path = new java.util.ArrayList<>();
+        if (folderId == null || folderId == 0) {
+            return path;
+        }
+
+        File currentFolder = fileMapper.getFileById(folderId);
+        if (currentFolder == null || !currentFolder.getIsFolder()) {
+            return path;
+        }
+
+        Long currentId = folderId;
+        while (currentId != null && currentId > 0) {
+            File folder = fileMapper.getFileById(currentId);
+            if (folder != null) {
+                path.add(0, convertToFileInfo(folder));
+                currentId = folder.getParentId();
+            } else {
+                break;
+            }
+        }
+
+        java.util.Collections.reverse(path);
+        return path;
+    }
+
+    @Override
     @Transactional
     public void deleteFile(Long fileId) {
         File file = fileMapper.getFileById(fileId);
@@ -124,7 +123,7 @@ public class FileServiceImpl implements FileService {
         if (file == null) {
             throw new RuntimeException("File not found");
         }
-        file.setParentFolderId(targetFolderId);
+        file.setParentId(targetFolderId);
         fileMapper.updateFile(file);
     }
 
@@ -135,7 +134,7 @@ public class FileServiceImpl implements FileService {
         if (file == null) {
             throw new RuntimeException("File not found");
         }
-        file.setFileName(newName);
+        file.setName(newName);
         fileMapper.updateFile(file);
     }
 
@@ -145,28 +144,43 @@ public class FileServiceImpl implements FileService {
         if (file == null) {
             throw new RuntimeException("File not found");
         }
-        if (file.getIsDeleted()) {
+        if (file.getDeletedAt() != null) {
             throw new RuntimeException("File has been deleted");
         }
         return convertToFileInfo(file);
+    }
+
+    @Override
+    @Transactional
+    public FileInfo createFolder(Long userId, String folderName, Long parentFolderId) {
+        User user = userMapper.getUserById(userId);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        File folder = new File();
+        folder.setUserId(userId);
+        folder.setParentId(parentFolderId != null ? parentFolderId : 0L);
+        folder.setName(folderName);
+        folder.setIsFolder(true);
+        folder.setCreatedAt(LocalDateTime.now());
+        folder.setUpdatedAt(LocalDateTime.now());
+
+        fileMapper.insertFile(folder);
+        return convertToFileInfo(folder);
     }
 
     private FileInfo convertToFileInfo(File file) {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setId(file.getId());
         fileInfo.setUserId(file.getUserId());
-        fileInfo.setParentFolderId(file.getParentFolderId());
-        fileInfo.setFileName(file.getFileName());
-        fileInfo.setOriginalName(file.getOriginalName());
-        fileInfo.setFileSize(file.getFileSize());
-        fileInfo.setMimeType(file.getMimeType());
-        fileInfo.setFileHash(file.getFileHash());
-        fileInfo.setStoragePath(file.getStoragePath());
-        fileInfo.setStorageType(file.getStorageType());
-        fileInfo.setVersion(file.getVersion());
-        fileInfo.setIsDeleted(file.getIsDeleted());
+        fileInfo.setParentFolderId(file.getParentId());
+        fileInfo.setFileName(file.getName());
+        fileInfo.setOriginalName(file.getName());
         fileInfo.setCreatedAt(file.getCreatedAt());
         fileInfo.setUpdatedAt(file.getUpdatedAt());
+        fileInfo.setDeletedAt(file.getDeletedAt());
+        fileInfo.setIsFolder(file.getIsFolder());
         return fileInfo;
     }
 

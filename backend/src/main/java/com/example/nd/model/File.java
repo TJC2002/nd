@@ -10,16 +10,11 @@ import java.time.LocalDateTime;
 public class File {
     private Long id;
     private Long userId;
-    private Long parentFolderId;
-    private String fileName;
-    private String originalName;
-    private Long fileSize;
-    private String mimeType;
-    private String fileHash;
-    private String storagePath;
-    private String storageType;
-    private Long version;
-    private Boolean isDeleted;
+    private Long parentId;
+    private Long metadataId;
+    private String name;
+    private Boolean isFolder;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
 }

@@ -17,6 +17,8 @@ public interface FileService {
     
     List<FileInfo> getFilesByUserId(Long userId);
     
+    List<FileInfo> getFolderPath(Long folderId, Long userId);
+    
     void deleteFile(Long fileId);
     
     void moveFile(Long fileId, Long targetFolderId);
@@ -24,4 +26,6 @@ public interface FileService {
     void renameFile(Long fileId, String newName);
     
     FileInfo downloadFile(Long fileId);
+    
+    FileInfo createFolder(Long userId, String folderName, Long parentFolderId);
 }

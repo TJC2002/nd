@@ -3,6 +3,7 @@ package com.example.nd.service;
 import com.example.nd.mapper.StorageMapper;
 import com.example.nd.model.StorageNode;
 import com.example.nd.model.File;
+import com.example.nd.model.FileMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +59,35 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public String selectStorageNode(File file) {
+        List<StorageNode> nodes = getAllNodes();
+        if (nodes == null || nodes.isEmpty()) {
+            return "local";
+        }
+
+        StorageNode selectedNode = null;
+        Long maxAvailableSpace = 0L;
+
+        for (StorageNode node : nodes) {
+            if (!"active".equals(node.getStatus())) {
+                continue;
+            }
+
+            Long availableSpace = node.getCapacity() - node.getUsedSpace();
+            if (availableSpace > maxAvailableSpace) {
+                maxAvailableSpace = availableSpace;
+                selectedNode = node;
+            }
+        }
+
+        if (selectedNode != null) {
+            return selectedNode.getStorageType();
+        }
+
+        return "local";
+    }
+
+    @Override
+    public String selectStorageNode(FileMetadata fileMetadata) {
         List<StorageNode> nodes = getAllNodes();
         if (nodes == null || nodes.isEmpty()) {
             return "local";

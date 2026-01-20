@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Box,
   Typography,
@@ -23,6 +24,14 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  Card,
+  CardHeader,
+  CardContent,
+  CardActions,
+  Checkbox,
+  CardMedia,
+  Breadcrumbs,
+  Link,
 } from '@mui/material'
 import {
   Folder,
@@ -39,11 +48,18 @@ import {
   StarBorderOutlined,
   ViewList,
   GridViewOutlined,
+  FavoriteBorder,
+  Favorite,
 } from '@mui/icons-material'
 import { fileApi, storageApi } from '../../services/api'
+import { useUpload } from '../../context/UploadContext'
 import './FileManagement.css'
 
 const FileManagement = () => {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { setDialogOpen, setCurrentFolder } = useUpload()
+  const [searchParams] = useSearchParams()
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState('grid')
   const [selectedFiles, setSelectedFiles] = useState(new Set())
@@ -53,17 +69,49 @@ const FileManagement = () => {
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
   const [currentFolderId, setCurrentFolderId] = useState(null)
+  const [breadcrumbPath, setBreadcrumbPath] = useState([])
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
   useEffect(() => {
+    const folderId = searchParams.get('folderId')
+    console.log('folderId from URL:', folderId)
+    if (folderId) {
+      setCurrentFolderId(parseInt(folderId))
+    } else {
+      setCurrentFolderId(null)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    console.log('currentFolderId changed:', currentFolderId)
     loadFiles()
+    updateBreadcrumbPath()
   }, [currentFolderId])
+
+  const updateBreadcrumbPath = async () => {
+    if (!currentFolderId) {
+      setBreadcrumbPath([])
+      return
+    }
+
+    try {
+      const response = await fileApi.getFolderPath(currentFolderId)
+      if (response.code === 200 && response.data) {
+        setBreadcrumbPath(response.data)
+      }
+    } catch (error) {
+      console.error('获取文件夹路径失败:', error)
+    }
+  }
 
   const loadFiles = async () => {
     try {
       setLoading(true)
+      console.log('Loading files for folderId:', currentFolderId)
       const response = await fileApi.getFiles(currentFolderId)
+      console.log('API response:', response)
       if (response.code === 200 && response.data) {
+        console.log('Setting files:', response.data)
         setFiles(response.data)
       }
     } catch (error) {
@@ -107,7 +155,8 @@ const FileManagement = () => {
   }
 
   const handleUpload = () => {
-    console.log('上传文件')
+    setCurrentFolder(currentFolderId)
+    setDialogOpen(true)
   }
 
   const handleCreateFolder = () => {
@@ -118,7 +167,7 @@ const FileManagement = () => {
   const handleCreateFolderConfirm = async () => {
     if (folderName.trim()) {
       try {
-        const response = await storageApi.createNode(folderName.trim(), currentFolderId)
+        const response = await fileApi.createFolder(folderName.trim(), currentFolderId)
         if (response.code === 200) {
           showSnackbar('文件夹创建成功')
           setCreateFolderDialog(false)
@@ -132,6 +181,18 @@ const FileManagement = () => {
         showSnackbar('创建文件夹失败', 'error')
       }
     }
+  }
+
+  const handleFolderClick = (file) => {
+    if (file.isFolder) {
+      const params = new URLSearchParams(searchParams)
+      params.set('folderId', file.id)
+      navigate(`?${params.toString()}`)
+    }
+  }
+
+  const handleBack = () => {
+    navigate('/')
   }
 
   const handleCreateFolderCancel = () => {
@@ -167,31 +228,60 @@ const FileManagement = () => {
     setSortBy(field)
   }
 
-  const getFileIcon = (type) => {
-    const iconMap = {
-      folder: <Folder />,
-      pdf: <Description />,
-      docx: <Description />,
-      xlsx: <Description />,
-      png: <Description />,
-      jpg: <Description />,
-      mp4: <PlayCircleFilled />,
-      zip: <Description />,
+  const getFileIcon = (isFolder, mimeType) => {
+    if (isFolder) {
+      return <Folder />
     }
-    return iconMap[type] || <Folder />
+    const iconMap = {
+      'application/pdf': <Description />,
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': <Description />,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': <Description />,
+      'image/jpeg': <Description />,
+      'image/png': <Description />,
+      'video/mp4': <PlayCircleFilled />,
+      'application/zip': <Description />,
+    }
+    return iconMap[mimeType] || <Description />
+  }
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const now = new Date()
+    const diff = now - date
+    const seconds = Math.floor(diff / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+
+    if (seconds < 60) return '刚刚'
+    if (minutes < 60) return `${minutes} 分钟前`
+    if (hours < 24) return `${hours} 小时前`
+    if (days < 7) return `${days} 天前`
+    if (days < 30) return `${Math.floor(days / 7)} 周前`
+    if (days < 365) return `${Math.floor(days / 30)} 月前`
+    return `${Math.floor(days / 365)} 年前`
   }
 
   const filteredFiles = files.filter(file =>
-    file.name.toLowerCase().includes(searchQuery.toLowerCase())
+    file.fileName && file.fileName.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const sortedFiles = [...filteredFiles].sort((a, b) => {
     if (sortBy === 'name') {
-      return a.name.localeCompare(b.name)
+      return a.fileName.localeCompare(b.fileName)
     } else if (sortBy === 'date') {
-      return new Date(b.date) - new Date(a.date)
+      return new Date(b.createdAt) - new Date(a.createdAt)
     } else if (sortBy === 'size') {
-      return parseFloat(a.size) - parseFloat(b.size)
+      return parseFloat(a.fileSize) - parseFloat(b.fileSize)
     }
     return 0
   })
@@ -204,6 +294,31 @@ const FileManagement = () => {
         </Box>
       )}
       <Box className="top-bar">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {currentFolderId && (
+            <IconButton onClick={handleBack}>
+              <Folder />
+            </IconButton>
+          )}
+          <Breadcrumbs aria-label="breadcrumb" sx={{ flexGrow: 1 }}>
+            <Link color="inherit" href="/" onClick={(e) => { e.preventDefault(); navigate('/') }}>
+              全部文件
+            </Link>
+            {breadcrumbPath.map((folder, index) => (
+              <Link
+                key={folder.id}
+                color="inherit"
+                href={`?folderId=${folder.id}`}
+                onClick={(e) => {
+                  e.preventDefault()
+                  navigate(`?folderId=${folder.id}`)
+                }}
+              >
+                {folder.fileName}
+              </Link>
+            ))}
+          </Breadcrumbs>
+        </Box>
         <Box className="top-bar-left">
           <Button
             variant="outlined"
@@ -219,6 +334,31 @@ const FileManagement = () => {
           >
             上传文件
           </Button>
+          {selectedFiles.size > 0 && (
+            <>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteOutline />}
+                onClick={() => handleDelete([...selectedFiles][0])}
+              >
+                删除 ({selectedFiles.size})
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<ShareOutlined />}
+              >
+                分享 ({selectedFiles.size})
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<Favorite />}
+                onClick={() => handleToggleFavorite([...selectedFiles][0]?.id)}
+              >
+                收藏 ({selectedFiles.size})
+              </Button>
+            </>
+          )}
         </Box>
         <Box className="top-bar-right">
           <Box sx={{ display: 'flex', gap: '4px', mr: 2 }}>
@@ -263,29 +403,113 @@ const FileManagement = () => {
               <Grid container spacing={2} className="file-grid" sx={{ margin: 0, width: '100%' }}>
                 {sortedFiles.map((file) => (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={file.id}>
-                    <Paper
+                    <Card
                       className={`file-card ${selectedFiles.has(file.id) ? 'selected' : ''}`}
-                      onClick={() => handleFileClick(file)}
                       elevation={0}
+                      sx={{ 
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
                     >
-                      <Box className={`file-icon ${file.type === 'folder' ? 'folder-icon' : ''}`}>
-                        {getFileIcon(file.type)}
-                      </Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body2" className="file-name">
-                          {file.name}
-                        </Typography>
-                        <Typography variant="body2" className="file-meta">
-                          {file.size}
-                        </Typography>
-                      </Box>
-                    </Paper>
+                      <CardHeader
+                        avatar={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Checkbox
+                              checked={selectedFiles.has(file.id)}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                handleFileClick(file)
+                              }}
+                              size="small"
+                            />
+                            <Avatar 
+                              sx={{ bgcolor: file.isFolder ? 'primary.main' : 'secondary.main', cursor: file.isFolder ? 'pointer' : 'default' }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (file.isFolder) {
+                                  handleFolderClick(file)
+                                }
+                              }}
+                            >
+                              {getFileIcon(file.isFolder, file.mimeType)}
+                            </Avatar>
+                          </Box>
+                        }
+                        title={file.fileName}
+                        subheader={formatFileSize(file.fileSize)}
+                        titleTypographyProps={{
+                          sx: { color: 'text.primary' }
+                        }}
+                        subheaderTypographyProps={{
+                          sx: { color: 'text.secondary' }
+                        }}
+                        action={
+                          <IconButton size="small" onClick={(e) => e.stopPropagation()}>
+                            <MoreVertOutlined />
+                          </IconButton>
+                        }
+                      />
+                      <CardContent sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', pt: 0 }}>
+                        {!file.isFolder ? (
+                          <Box sx={{ width: '100%', height: 150, position: 'relative', overflow: 'hidden', borderRadius: 1, cursor: 'pointer' }}>
+                            <img 
+                              src={`http://localhost:8080/files/${file.id}/cover`} 
+                              alt={file.fileName}
+                              style={{ 
+                                width: '100%', 
+                                height: '100%', 
+                                objectFit: 'cover',
+                                backgroundColor: '#f5f5f5'
+                              }}
+                              onError={(e) => {
+                                e.target.style.display = 'none'
+                                e.target.nextElementSibling.style.display = 'flex'
+                              }}
+                            />
+                            <Box 
+                              style={{ 
+                                display: 'none',
+                                width: '100%', 
+                                height: '100%', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                backgroundColor: '#f5f5f5'
+                              }}
+                            >
+                              {getFileIcon(file.isFolder, file.mimeType)}
+                            </Box>
+                          </Box>
+                        ) : (
+                          <Box 
+                            sx={{ fontSize: 64, color: 'text.secondary', cursor: file.isFolder ? 'pointer' : 'default' }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (file.isFolder) {
+                                handleFolderClick(file)
+                              }
+                            }}
+                          >
+                            {getFileIcon(file.isFolder, file.mimeType)}
+                          </Box>
+                        )}
+                      </CardContent>
+                      <CardActions disableSpacing>
+                        <IconButton aria-label="收藏" size="small">
+                          <FavoriteBorder />
+                        </IconButton>
+                        <IconButton aria-label="分享" size="small">
+                          <ShareOutlined />
+                        </IconButton>
+                      </CardActions>
+                    </Card>
                   </Grid>
                 ))}
               </Grid>
             ) : (
               <Box className="file-list-container">
                 <Box className="file-list-header">
+                  <Box sx={{ flex: 0.5 }}></Box>
                   <Typography variant="body2" sx={{ flex: 3, fontWeight: 'bold', fontSize: '0.875rem' }}>名称</Typography>
                   <Typography variant="body2" sx={{ flex: 2, fontWeight: 'bold', fontSize: '0.875rem' }}>大小</Typography>
                   <Typography variant="body2" sx={{ flex: 2, fontWeight: 'bold', fontSize: '0.875rem' }}>修改日期</Typography>
@@ -296,18 +520,57 @@ const FileManagement = () => {
                     <ListItem
                       key={file.id}
                       className={`file-item ${selectedFiles.has(file.id) ? 'selected' : ''}`}
-                      onClick={() => handleFileClick(file)}
+                      onClick={(e) => {
+                        if (!file.isFolder) {
+                          handleFileClick(file)
+                        }
+                      }}
                       sx={{ display: 'flex', alignItems: 'center', py: 0.5 }}
                     >
-                      <Box sx={{ flex: 3, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box className={`file-icon ${file.type === 'folder' ? 'folder-icon' : ''}`}>
-                          {getFileIcon(file.type)}
-                        </Box>
-                        <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>{file.name}</Typography>
+                      <Box sx={{ flex: 0.5 }}>
+                        <Checkbox
+                          checked={selectedFiles.has(file.id)}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            handleFileClick(file)
+                          }}
+                          size="small"
+                        />
                       </Box>
-                      <Typography variant="body2" sx={{ flex: 2, fontSize: '0.875rem' }}>{file.size}</Typography>
-                      <Typography variant="body2" sx={{ flex: 2, fontSize: '0.875rem' }}>{file.date}</Typography>
-                      <Box sx={{ flex: 1 }}>
+                      <Box sx={{ flex: 3, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box 
+                          sx={{ fontSize: 32, color: 'text.secondary', cursor: file.isFolder ? 'pointer' : 'default' }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (file.isFolder) {
+                              handleFolderClick(file)
+                            }
+                          }}
+                        >
+                          {getFileIcon(file.isFolder, file.mimeType)}
+                        </Box>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ fontSize: '0.875rem', cursor: file.isFolder ? 'pointer' : 'default' }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (file.isFolder) {
+                              handleFolderClick(file)
+                            }
+                          }}
+                        >
+                          {file.fileName}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ flex: 2, fontSize: '0.875rem' }}>{formatFileSize(file.fileSize)}</Typography>
+                      <Typography variant="body2" sx={{ flex: 2, fontSize: '0.875rem' }}>{formatDate(file.createdAt)}</Typography>
+                      <Box sx={{ flex: 1, display: 'flex', gap: 0.5 }}>
+                        <IconButton edge="end" size="small" sx={{ padding: '4px' }}>
+                          <FavoriteBorder sx={{ fontSize: '1.25rem' }} />
+                        </IconButton>
+                        <IconButton edge="end" size="small" sx={{ padding: '4px' }}>
+                          <ShareOutlined sx={{ fontSize: '1.25rem' }} />
+                        </IconButton>
                         <IconButton edge="end" size="small" sx={{ padding: '4px' }}>
                           <MoreVertOutlined sx={{ fontSize: '1.25rem' }} />
                         </IconButton>
@@ -318,31 +581,6 @@ const FileManagement = () => {
               </Box>
             )}
           </>
-        )}
-
-        {selectedFiles.size > 0 && (
-          <Box className="bulk-actions">
-            <Button
-              variant="outlined"
-              startIcon={<DeleteOutline />}
-              onClick={() => handleDelete([...selectedFiles][0])}
-            >
-              删除
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<ShareOutlined />}
-            >
-              分享
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={selectedFiles.has([...selectedFiles][0]?.id) ? <StarBorderOutlined /> : <StarOutline />}
-              onClick={() => handleToggleFavorite([...selectedFiles][0]?.id)}
-            >
-              {selectedFiles.has([...selectedFiles][0]?.id) ? '取消收藏' : '收藏'}
-            </Button>
-          </Box>
         )}
       </Box>
 

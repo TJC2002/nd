@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.nd.mapper.TaskMapper">
+    
+    <select id="getTaskById" resultType="com.example.nd.model.AsyncTask">
+        SELECT * FROM async_tasks WHERE id = #{taskId}
+    </select>
+    
+    <select id="getTasksByUserId" resultType="com.example.nd.model.AsyncTask">
+        SELECT * FROM async_tasks WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+    
+    <select id="getTasksByFileId" resultType="com.example.nd.model.AsyncTask">
+        SELECT * FROM async_tasks WHERE file_id = #{fileId} ORDER BY created_at DESC
+    </select>
+    
+    <insert id="insertTask" parameterType="com.example.nd.model.AsyncTask" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO async_tasks (user_id, file_id, task_type, status, progress, message, result_data, error_details, created_at, updated_at)
+        VALUES (#{userId}, #{fileId}, #{taskType}, #{status}, #{progress}, #{message}, #{resultData}, #{errorDetails}, NOW(), NOW())
+    </insert>
+    
+    <update id="updateTask" parameterType="com.example.nd.model.AsyncTask">
+        UPDATE async_tasks
+        SET status = #{status}, progress = #{progress}, message = #{message}, result_data = #{resultData}, error_details = #{errorDetails}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <update id="updateTaskProgress">
+        UPDATE async_tasks
+        SET progress = #{progress}, message = #{message}, updated_at = NOW()
+        WHERE id = #{taskId}
+    </update>
+    
+    <update id="updateTaskStatus">
+        UPDATE async_tasks
+        SET status = #{status}, updated_at = NOW()
+        WHERE id = #{taskId}
+    </update>
+    
+    <delete id="deleteTask">
+        DELETE FROM async_tasks WHERE id = #{taskId}
+    </delete>
+    
+    <delete id="deleteTasksByFileId">
+        DELETE FROM async_tasks WHERE file_id = #{fileId}
+    </delete>
+    
+</mapper>

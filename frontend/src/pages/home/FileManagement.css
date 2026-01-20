@@ -85,7 +85,6 @@
 
 .file-card.selected {
   background: var(--mui-palette-primary-main);
-  color: white;
   border-color: var(--mui-palette-primary-main);
   box-shadow: 0 8px 24px rgba(var(--mui-palette-primary-mainChannel), 0.4);
 }

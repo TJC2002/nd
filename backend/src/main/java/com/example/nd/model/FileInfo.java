@@ -20,6 +20,8 @@ public class FileInfo {
     private String storageType;
     private Long version;
     private Boolean isDeleted;
+    private Boolean isFolder;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
 }

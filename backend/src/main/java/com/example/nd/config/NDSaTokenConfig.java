@@ -33,13 +33,14 @@ public class NDSaTokenConfig implements WebMvcConfigurer {
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // 注册 Sa-Token 拦截器，打开注解式鉴权功能
         registry.addInterceptor(new SaInterceptor())
-                // 排除不需要认证的路径
                 .excludePathPatterns("/auth/**")
-                .excludePathPatterns("/files/**")
                 .excludePathPatterns("/shares/**")
-                .excludePathPatterns("/swagger-ui/**", "/v3/api-docs/**");
+                .excludePathPatterns("/swagger-ui/**", "/swagger-ui.html")
+                .excludePathPatterns("/v3/api-docs/**")
+                .excludePathPatterns("/swagger-resources/**")
+                .excludePathPatterns("/webjars/**")
+                .excludePathPatterns("/error");
     }
 
     /**

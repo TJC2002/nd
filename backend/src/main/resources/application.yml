@@ -33,12 +33,32 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
     default-property-inclusion: non_null
 
+sa-token:
+  token-name: satoken
+  timeout: 3600
+  active-timeout: 1800
+  is-concurrent: true
+  is-share: false
+  token-style: uuid
+  is-log: true
+  is-read-cookie: false
+  is-read-header: true
+  is-read-body: false
+  is-print: false
+
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.example.nd.model
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+logging:
+  level:
+    root: INFO
+    com.example.nd: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 server:
   port: 8080

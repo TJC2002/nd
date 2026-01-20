@@ -1,169 +1,121 @@
 package com.example.nd.controller;
 
-import com.example.nd.dto.*;
-import com.example.nd.model.File;
-import com.example.nd.model.FileInfo;
-import com.example.nd.model.ShareLink;
-import com.example.nd.service.FileService;
-import com.example.nd.service.ShareService;
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
+import com.example.nd.dto.ApiResponse;
+import com.example.nd.dto.CreateShareRequest;
+import com.example.nd.dto.ShareResponse;
+import com.example.nd.dto.VerifyShareRequest;
+import com.example.nd.service.ShareService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
-@RequestMapping("/shares")
+@RequestMapping("/api/shares")
 @Tag(name = "分享管理", description = "文件分享相关接口")
 public class ShareController {
 
     @Autowired
     private ShareService shareService;
 
-    @Autowired
-    private FileService fileService;
-
-    @GetMapping
-    @Operation(summary = "获取分享记录", description = "获取用户的所有分享记录")
-    public ApiResponse<List<ShareLink>> getShares() {
-        try {
-            Long userId = StpUtil.getLoginIdAsLong();
-            List<ShareLink> shares = shareService.getSharesByUserId(userId);
-            return ApiResponse.success(shares);
-        } catch (Exception e) {
-            return ApiResponse.error("Unauthorized");
-        }
+    @PostMapping
+    @SaCheckLogin
+    @Operation(summary = "创建分享链接", description = "为指定文件创建分享链接")
+    public ApiResponse<ShareResponse> createShare(
+            @RequestBody CreateShareRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        ShareResponse shareResponse = shareService.createShare(userId, request);
+        return ApiResponse.success(shareResponse);
     }
 
-    @PostMapping
-    @Operation(summary = "创建分享链接", description = "为指定文件创建分享链接")
-    public ApiResponse<ShareLink> createShare(@RequestBody CreateShareRequest request) {
-        try {
-            Long userId = StpUtil.getLoginIdAsLong();
-            ShareLink share = shareService.createShare(userId, request.getFileId(), request.getPassword(), request.getExpireDays());
-            return ApiResponse.success(share);
-        } catch (Exception e) {
-            return ApiResponse.error("Unauthorized");
-        }
+    @PostMapping("/verify")
+    @Operation(summary = "验证分享链接", description = "验证分享链接的有效性")
+    public ApiResponse<ShareResponse> verifyShare(
+            @RequestBody VerifyShareRequest request,
+            HttpServletRequest httpRequest) {
+        String ipAddress = getClientIpAddress(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        ShareResponse shareResponse = shareService.verifyShare(request, ipAddress, userAgent);
+        return ApiResponse.success(shareResponse);
+    }
+
+    @GetMapping
+    @SaCheckLogin
+    @Operation(summary = "获取用户分享列表", description = "获取当前用户的所有分享记录")
+    public ApiResponse<List<ShareResponse>> getUserShares() {
+        Long userId = StpUtil.getLoginIdAsLong();
+        List<ShareResponse> shares = shareService.getUserShares(userId);
+        return ApiResponse.success(shares);
     }
 
     @GetMapping("/{shareCode}")
-    @Operation(summary = "验证分享链接", description = "验证分享链接是否有效")
-    public ApiResponse<ShareLink> getShareByCode(@PathVariable String shareCode) {
-        ShareLink share = shareService.getShareByCode(shareCode);
-        if (share != null) {
-            return ApiResponse.success(share);
-        }
-        return ApiResponse.error("Share link not found");
+    @Operation(summary = "通过分享码获取分享信息", description = "通过分享码获取分享详情")
+    public ApiResponse<ShareResponse> getShareByCode(
+            @Parameter(description = "分享码") @PathVariable String shareCode,
+            HttpServletRequest httpRequest) {
+        String ipAddress = getClientIpAddress(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        ShareResponse shareResponse = shareService.getShareByCode(shareCode, ipAddress, userAgent);
+        return ApiResponse.success(shareResponse);
     }
 
-    @PostMapping("/{shareCode}/access")
-    @Operation(summary = "访问分享链接", description = "验证密码并访问分享的文件")
-    public ApiResponse<FileInfo> accessShare(@PathVariable String shareCode, @RequestBody AccessShareRequest request) {
-        ShareLink share = shareService.getShareByCode(shareCode);
-        if (share == null) {
-            return ApiResponse.error("Share link not found");
-        }
-
-        if (!shareService.validateShare(share, request.getPassword())) {
-            return ApiResponse.error("Invalid password or expired share link");
-        }
-
-        shareService.incrementAccessCount(share.getId());
-        File file = shareService.getSharedFile(share);
-        if (file == null) {
-            return ApiResponse.error("File not found");
-        }
-
-        FileInfo fileInfo = new FileInfo();
-        fileInfo.setId(file.getId());
-        fileInfo.setUserId(file.getUserId());
-        fileInfo.setParentFolderId(file.getParentFolderId());
-        fileInfo.setFileName(file.getFileName());
-        fileInfo.setOriginalName(file.getOriginalName());
-        fileInfo.setFileSize(file.getFileSize());
-        fileInfo.setMimeType(file.getMimeType());
-        fileInfo.setFileHash(file.getFileHash());
-        fileInfo.setStoragePath(file.getStoragePath());
-        fileInfo.setStorageType(file.getStorageType());
-        fileInfo.setVersion(file.getVersion());
-        fileInfo.setIsDeleted(file.getIsDeleted());
-        fileInfo.setCreatedAt(file.getCreatedAt());
-        fileInfo.setUpdatedAt(file.getUpdatedAt());
-
-        return ApiResponse.success(fileInfo);
-    }
-
-    @GetMapping("/{shareCode}/download")
-    @Operation(summary = "下载分享文件", description = "下载分享的文件")
-    public ResponseEntity<Resource> downloadSharedFile(@PathVariable String shareCode, @RequestParam(required = false) String password) {
-        ShareLink share = shareService.getShareByCode(shareCode);
-        if (share == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        if (!shareService.validateShare(share, password)) {
-            return ResponseEntity.status(403).build();
-        }
-
-        shareService.incrementAccessCount(share.getId());
-        File file = shareService.getSharedFile(share);
-        if (file == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        try {
-            var filePath = Paths.get(file.getStoragePath());
-            Resource resource = new org.springframework.core.io.UrlResource(filePath.toUri());
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getOriginalName() + "\"")
-                    .contentType(MediaType.parseMediaType(file.getMimeType()))
-                    .body(resource);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+    @PostMapping("/{shareId}/revoke")
+    @SaCheckLogin
+    @Operation(summary = "撤销分享链接", description = "撤销指定的分享链接")
+    public ApiResponse<Void> revokeShare(
+            @Parameter(description = "分享ID") @PathVariable Long shareId) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        shareService.revokeShare(userId, shareId);
+        return ApiResponse.success(null);
     }
 
     @DeleteMapping("/{shareId}")
-    @Operation(summary = "撤销分享链接", description = "撤销指定的分享链接")
-    public ApiResponse<String> deleteShare(@PathVariable Long shareId) {
-        try {
-            Long userId = StpUtil.getLoginIdAsLong();
-            ShareLink share = shareService.getShareByCode(shareId.toString());
-            if (share != null && share.getUserId().equals(userId)) {
-                shareService.deleteShare(shareId);
-                return ApiResponse.success("Share link deleted successfully");
-            }
-            return ApiResponse.error("You don't have permission to delete this share");
-        } catch (Exception e) {
-            return ApiResponse.error("Unauthorized");
-        }
+    @SaCheckLogin
+    @Operation(summary = "删除分享记录", description = "永久删除指定的分享记录")
+    public ApiResponse<Void> deleteShare(
+            @Parameter(description = "分享ID") @PathVariable Long shareId) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        shareService.deleteShare(userId, shareId);
+        return ApiResponse.success(null);
     }
 
-    @GetMapping("/stats")
-    @Operation(summary = "获取分享统计", description = "获取用户的分享统计信息")
-    public ApiResponse<ShareStatsResponse> getShareStats() {
-        try {
-            Long userId = StpUtil.getLoginIdAsLong();
-            List<ShareLink> shares = shareService.getSharesByUserId(userId);
-            long totalShares = shares.size();
-            long totalAccessCount = shares.stream().mapToLong(ShareLink::getAccessCount).sum();
+    @GetMapping("/{shareCode}/download")
+    @Operation(summary = "下载分享文件", description = "通过分享码下载文件")
+    public void downloadSharedFile(
+            @Parameter(description = "分享码") @PathVariable String shareCode,
+            @Parameter(description = "访问密码") @RequestParam(required = false) String password,
+            HttpServletResponse response,
+            HttpServletRequest httpRequest) throws Exception {
+        String ipAddress = getClientIpAddress(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        shareService.downloadSharedFile(shareCode, password, response, ipAddress, userAgent);
+    }
 
-            ShareStatsResponse response = new ShareStatsResponse();
-            response.setTotalShares(totalShares);
-            response.setTotalAccessCount(totalAccessCount);
-            return ApiResponse.success(response);
-        } catch (Exception e) {
-            return ApiResponse.error("Unauthorized");
+    private String getClientIpAddress(HttpServletRequest request) {
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("Proxy-Client-IP");
         }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getRemoteAddr();
+        }
+        return ipAddress;
     }
 }

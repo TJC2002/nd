@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -14,7 +14,7 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers.satoken = token
     }
     return config
   },
@@ -25,12 +25,26 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => {
+    if (response.data?.code === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('user')
+      window.dispatchEvent(new CustomEvent('auth-error', { detail: { message: response.data.message || '认证失败，请重新登录' } }))
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 1500)
+    }
     return response.data
   },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
-      window.location.href = '/login'
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('user')
+      window.dispatchEvent(new CustomEvent('auth-error', { detail: { message: '认证失败，请重新登录' } }))
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 1500)
     }
     return Promise.reject(error)
   }
@@ -40,7 +54,9 @@ export const fileApi = {
   getFiles: (folderId) => {
     return api.get('/files', { params: { folderId } })
   },
-
+  getFolderPath: (folderId) => {
+    return api.get('/files/path', { params: { folderId } })
+  },
   uploadFile: (file, parentFolderId) => {
     const formData = new FormData()
     formData.append('file', file)
@@ -74,6 +90,10 @@ export const fileApi = {
     return api.get(`/files/${fileId}/download`, {
       responseType: 'blob',
     })
+  },
+
+  createFolder: (folderName, parentFolderId) => {
+    return api.post('/files/folders', { folderName, parentFolderId })
   },
 }
 

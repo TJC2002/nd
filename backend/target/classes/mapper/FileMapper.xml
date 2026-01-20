@@ -3,37 +3,101 @@
 <mapper namespace="com.example.nd.mapper.FileMapper">
     
     <select id="getFileById" resultType="com.example.nd.model.File">
-        SELECT * FROM files WHERE id = #{id} AND is_deleted = 0
+        SELECT * FROM files WHERE id = #{id} AND deleted_at IS NULL
     </select>
     
     <select id="getFilesByFolderId" resultType="com.example.nd.model.File">
-        SELECT * FROM files WHERE parent_folder_id = #{folderId} AND is_deleted = 0 ORDER BY created_at DESC
+        SELECT * FROM files WHERE parent_id = #{folderId} AND deleted_at IS NULL ORDER BY created_at DESC
     </select>
     
     <select id="getFilesByUserId" resultType="com.example.nd.model.File">
-        SELECT * FROM files WHERE user_id = #{userId} AND is_deleted = 0 ORDER BY created_at DESC
+        SELECT * FROM files WHERE user_id = #{userId} AND deleted_at IS NULL ORDER BY created_at DESC
     </select>
     
     <insert id="insertFile" parameterType="com.example.nd.model.File" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO files (user_id, parent_folder_id, file_name, original_name, file_size, mime_type, file_hash, storage_path, storage_type, version, is_deleted, created_at, updated_at)
-        VALUES (#{userId}, #{parentFolderId}, #{fileName}, #{originalName}, #{fileSize}, #{mimeType}, #{fileHash}, #{storagePath}, #{storageType}, #{version}, 0, NOW(), NOW())
+        INSERT INTO files (user_id, parent_id, metadata_id, name, is_folder, created_at, updated_at)
+        VALUES (#{userId}, #{parentId}, #{metadataId}, #{name}, #{isFolder}, NOW(), NOW())
     </insert>
     
     <update id="updateFile" parameterType="com.example.nd.model.File">
         UPDATE files
-        SET parent_folder_id = #{parentFolderId}, file_name = #{fileName}, original_name = #{originalName}, file_size = #{fileSize}, mime_type = #{mimeType}, storage_path = #{storagePath}, version = #{version}, updated_at = NOW()
+        SET parent_id = #{parentId}, metadata_id = #{metadataId}, name = #{name}, is_folder = #{isFolder}, updated_at = NOW()
         WHERE id = #{id}
     </update>
     
     <update id="deleteFile">
-        UPDATE files SET is_deleted = 1, updated_at = NOW() WHERE id = #{fileId}
+        UPDATE files SET deleted_at = NOW() WHERE id = #{fileId}
     </update>
     
     <select id="getFileByHash" resultType="com.example.nd.model.File">
-        SELECT * FROM files WHERE file_hash = #{fileHash} AND is_deleted = 0 LIMIT 1
+        SELECT f.* FROM files f
+        JOIN file_metadata fm ON f.metadata_id = fm.id
+        WHERE fm.hash_value = #{fileHash} AND f.deleted_at IS NULL LIMIT 1
     </select>
     
     <update id="updateFileVersion">
-        UPDATE files SET version = version + 1, updated_at = NOW() WHERE id = #{fileId}
+        UPDATE files SET updated_at = NOW() WHERE id = #{fileId}
     </update>
+
+    <select id="getDeletedFilesByUserId" resultType="com.example.nd.model.File">
+        SELECT * FROM files WHERE user_id = #{userId} AND deleted_at IS NOT NULL ORDER BY deleted_at DESC
+    </select>
+
+    <update id="restoreFile">
+        UPDATE files SET deleted_at = NULL, updated_at = NOW() WHERE id = #{fileId}
+    </update>
+
+    <delete id="deleteFilePermanently">
+        DELETE FROM files WHERE id = #{fileId}
+    </delete>
+
+    <delete id="deleteFilesPermanentlyByUserId">
+        DELETE FROM files WHERE user_id = #{userId} AND deleted_at IS NOT NULL
+    </delete>
+
+    <delete id="cleanExpiredFiles">
+        DELETE FROM files WHERE deleted_at IS NOT NULL AND deleted_at &lt;= #{expireTime}
+    </delete>
+
+    <select id="searchFiles" resultType="com.example.nd.model.File">
+        SELECT f.* FROM files f
+        LEFT JOIN file_metadata fm ON f.metadata_id = fm.id
+        WHERE f.user_id = #{userId} AND f.deleted_at IS NULL
+        <if test="request.keyword != null and request.keyword != ''">
+            AND f.name LIKE CONCAT('%', #{request.keyword}, '%')
+        </if>
+        <if test="request.folderId != null">
+            AND f.parent_id = #{request.folderId}
+        </if>
+        <if test="request.fileType != null and request.fileType != ''">
+            AND fm.mime_type LIKE CONCAT(#{request.fileType}, '%')
+        </if>
+        <if test="request.minSize != null">
+            AND fm.size &gt;= #{request.minSize}
+        </if>
+        <if test="request.maxSize != null">
+            AND fm.size &lt;= #{request.maxSize}
+        </if>
+        <choose>
+            <when test="request.sortBy == 'name'">
+                ORDER BY f.name
+                <if test="request.sortOrder == 'desc'">
+                    DESC
+                </if>
+            </when>
+            <when test="request.sortBy == 'size'">
+                ORDER BY fm.size
+                <if test="request.sortOrder == 'desc'">
+                    DESC
+                </if>
+            </when>
+            <otherwise>
+                ORDER BY f.created_at DESC
+            </otherwise>
+        </choose>
+        <if test="request.page != null and request.pageSize != null">
+            LIMIT #{request.pageSize} OFFSET #{request.page * request.pageSize}
+        </if>
+    </select>
+
 </mapper>
