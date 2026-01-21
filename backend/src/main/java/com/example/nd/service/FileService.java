@@ -17,6 +17,8 @@ public interface FileService {
     
     List<FileInfo> getFilesByUserId(Long userId);
     
+    List<FileInfo> getRootFiles(Long userId);
+    
     List<FileInfo> getFolderPath(Long folderId, Long userId);
     
     void deleteFile(Long fileId);

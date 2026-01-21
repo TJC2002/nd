@@ -80,6 +80,12 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    public List<FileInfo> getRootFiles(Long userId) {
+        List<File> files = fileMapper.getRootFiles(userId);
+        return files.stream().map(this::convertToFileInfo).toList();
+    }
+
+    @Override
     public List<FileInfo> getFolderPath(Long folderId, Long userId) {
         List<FileInfo> path = new java.util.ArrayList<>();
         if (folderId == null || folderId == 0) {

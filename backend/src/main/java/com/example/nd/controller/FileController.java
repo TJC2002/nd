@@ -49,7 +49,7 @@ public class FileController {
         Long userId = AuthUtil.getUserId();
         List<FileInfo> files;
         if (folderId == null || folderId == 0) {
-            files = fileService.getFilesByUserId(userId);
+            files = fileService.getRootFiles(userId);
         } else {
             files = fileService.getFilesByFolderId(folderId);
         }

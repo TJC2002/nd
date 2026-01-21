@@ -17,6 +17,8 @@ public interface FileMapper {
     
     List<File> getFilesByUserId(Long userId);
     
+    List<File> getRootFiles(Long userId);
+    
     int insertFile(File file);
     
     int updateFile(File file);

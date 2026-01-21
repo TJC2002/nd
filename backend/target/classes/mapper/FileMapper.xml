@@ -14,6 +14,10 @@
         SELECT * FROM files WHERE user_id = #{userId} AND deleted_at IS NULL ORDER BY created_at DESC
     </select>
     
+    <select id="getRootFiles" resultType="com.example.nd.model.File">
+        SELECT * FROM files WHERE user_id = #{userId} AND parent_id = 0 AND deleted_at IS NULL ORDER BY created_at DESC
+    </select>
+    
     <insert id="insertFile" parameterType="com.example.nd.model.File" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO files (user_id, parent_id, metadata_id, name, is_folder, created_at, updated_at)
         VALUES (#{userId}, #{parentId}, #{metadataId}, #{name}, #{isFolder}, NOW(), NOW())
