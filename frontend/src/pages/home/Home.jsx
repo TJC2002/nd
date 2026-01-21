@@ -167,7 +167,7 @@ const Home = () => {
                     fontFamily: '"SF Pro Display", "Roboto", sans-serif',
                     fontWeight: 800,
                     letterSpacing: '-0.5px',
-                    color: '#fff',
+                    color: theme.palette.text.primary,
                     userSelect: 'none',
                     fontSize: '1.5rem',
                 }}
@@ -182,30 +182,30 @@ const Home = () => {
               sx={{
                 width: 360,
                 '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  backgroundColor: theme.palette.action.hover,
                   borderRadius: 20, // Fully rounded
                   transition: 'all 0.3s ease',
                   border: '1px solid transparent',
                   pl: 2,
                   '& fieldset': { border: 'none' }, // Remove default border
                   '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      backgroundColor: theme.palette.action.hover,
                   },
                   '&.Mui-focused': {
                       width: 420,
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      backgroundColor: theme.palette.action.selected,
                       border: `1px solid ${theme.palette.primary.main}40`,
                   }
                 },
                 '& input': {
-                    color: 'white',
+                    color: theme.palette.text.primary,
                     fontWeight: 500,
                 }
               }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchOutlined sx={{ color: 'rgba(255,255,255,0.4)' }} />
+                    <SearchOutlined sx={{ color: theme.palette.text.secondary }} />
                   </InputAdornment>
                 ),
               }}
@@ -216,8 +216,8 @@ const Home = () => {
             
             <IconButton 
                 sx={{ 
-                    color: 'rgba(255,255,255,0.7)', 
-                    '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' } 
+                    color: theme.palette.text.secondary, 
+                    '&:hover': { color: theme.palette.text.primary, bgcolor: theme.palette.action.hover } 
                 }}
                 onClick={() => toggleDrawer(true)}
             >
@@ -225,7 +225,7 @@ const Home = () => {
             </IconButton>
 
             <IconButton
-                sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' } }}
+                sx={{ color: theme.palette.text.secondary, '&:hover': { color: theme.palette.text.primary, bgcolor: theme.palette.action.hover } }}
                 onClick={handleUploadClick}
             >
                 <CloudUploadOutlined />
@@ -284,16 +284,16 @@ const Home = () => {
                       px: 2,
                       borderRadius: 4, // More rounded
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      color: 'rgba(255,255,255,0.6)',
+                      color: theme.palette.text.secondary,
                       '&:hover': {
-                         backgroundColor: 'rgba(255,255,255,0.05)',
-                         color: 'white',
+                         backgroundColor: theme.palette.action.hover,
+                         color: theme.palette.text.primary,
                          transform: 'translateX(4px)',
                       },
                       '&.Mui-selected': {
-                        backgroundColor: 'rgba(255,255,255,0.1) !important',
+                        backgroundColor: theme.palette.action.selected + ' !important',
                         backdropFilter: 'blur(10px)',
-                        color: 'white',
+                        color: theme.palette.text.primary,
                         fontWeight: 600,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                         '& .MuiListItemIcon-root': {
@@ -334,8 +334,8 @@ const Home = () => {
                   <IconButton
                     onClick={() => setSidebarOpen(!sidebarOpen)}
                     sx={{
-                      color: 'rgba(255,255,255,0.4)',
-                      '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' }
+                      color: theme.palette.text.secondary,
+                      '&:hover': { color: theme.palette.text.primary, bgcolor: theme.palette.action.hover }
                     }}
                   >
                      {sidebarOpen ? <ChevronLeft /> : <ChevronRight />}

@@ -53,7 +53,7 @@ const ThemeSwitcher = () => {
         <MenuItem disabled sx={{ opacity: '1!important', color: 'white' }}>
             <Typography variant="caption" sx={{ fontWeight: 'bold' }}>强调色</Typography>
         </MenuItem>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, p: 1 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(1, 1fr)', gap: 1, p: 1 }}>
             {Object.entries(colorThemes).map(([key, colors]) => (
             <MenuItem
                 key={key}
@@ -73,15 +73,18 @@ const ThemeSwitcher = () => {
                     width: 16,
                     height: 16,
                     borderRadius: '50%',
-                    backgroundColor: colors.main,
-                    boxShadow: '0 0 5px ' + colors.main
+                    backgroundColor: colors.primary,
+                    boxShadow: '0 0 5px ' + colors.primary
                 }}
                 />
                 <Typography variant="body2" sx={{ color: 'white' }}>
-                    {key === 'ocean' ? '深海蓝' :
-                     key === 'sunset' ? '落日橙' :
-                     key === 'purple' ? '霓虹紫' :
-                     '极光绿'}
+                    {key === 'deepSpace' ? '深邃宇宙 (Deep Space)' :
+                     key === 'cyberpunk' ? '赛博朋克 (Cyberpunk)' :
+                     key === 'future' ? '极简未来 (Future)' :
+                     key === 'socialBlue' ? '社交蓝 (Light)' :
+                     key === 'romanticPink' ? '浪漫粉 (Light)' :
+                     key === 'businessBlue' ? '商务蓝 (Light)' :
+                     key}
                 </Typography>
             </MenuItem>
             ))}

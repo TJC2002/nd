@@ -5,13 +5,14 @@ const ThemeContext = createContext(null)
 
 export const ThemeProvider = ({ children }) => {
   const [mode, setMode] = useState(() => {
-    const savedMode = localStorage.getItem('themeMode') || 'system'
-    return savedMode
+    return localStorage.getItem('themeMode') || 'system'
   })
 
   const [colorTheme, setColorTheme] = useState(() => {
-    const savedColorTheme = localStorage.getItem('colorTheme') || 'ocean'
-    return savedColorTheme
+    // Default to 'deepSpace' since 'ocean' is being removed
+    const saved = localStorage.getItem('colorTheme')
+    const validThemes = ['deepSpace', 'cyberpunk', 'future', 'socialBlue', 'romanticPink', 'businessBlue']
+    return validThemes.includes(saved) ? saved : 'deepSpace'
   })
 
   const [systemTheme, setSystemTheme] = useState('light')
@@ -31,90 +32,151 @@ export const ThemeProvider = ({ children }) => {
   const effectiveMode = mode === 'system' ? systemTheme : mode
 
   const colorThemes = {
-    ocean: {
-      main: '#2E86DE', // Premium Blue
-      light: '#54A0FF',
-      dark: '#0058A8',
+    deepSpace: {
+      type: 'dark',
+      primary: '#00F0FF', // Neon Blue
+      background: '#001233', // Deep Blue
+      paper: '#0b1d3f', // Slightly lighter than bg
+      text: '#E0E0E0', // Laser Silver
+      accent: '#00F0FF',
+      secondary: '#2A2A2A', // Moon Stone Grey
+      // Radial gradient of Deep Blue + Neon Blue
+      gradient: `
+        radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.15) 0%, transparent 60%),
+        radial-gradient(circle at 50% 100%, rgba(0, 18, 51, 1) 0%, rgba(0,0,0,1) 100%)
+      `,
+      bgColor: '#001233'
     },
-    sunset: {
-      main: '#FF6B6B', // Soft Coral
-      light: '#FF9F43',
-      dark: '#EE5253',
+    cyberpunk: {
+      type: 'dark',
+      primary: '#6B48FF', // Electric Purple
+      background: '#0A0A0A', // Night Black
+      paper: '#141414',
+      text: '#E0E0E0', // Titanium Silver
+      accent: '#7FFF00', // Fluorescent Green
+      secondary: '#A0AEC0',
+      // Radial gradient of Black + Electric Purple + Green
+      gradient: `
+        radial-gradient(circle at 0% 0%, rgba(107, 72, 255, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(127, 255, 0, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, #0A0A0A 0%, #000000 100%)
+      `,
+      bgColor: '#0A0A0A'
     },
-    purple: {
-      main: '#5F27CD', // Deep Iris
-      light: '#9B59B6',
-      dark: '#341F97',
+    future: {
+      type: 'dark',
+      primary: '#4ECDC4', // Glacier Blue
+      background: '#3D3D3D', // Metal Grey
+      paper: '#4D4D4D',
+      text: '#F5F5F5', 
+      accent: '#FF6B6B', // Lava Orange
+      secondary: '#A0AEC0',
+      // Radial gradient of Metal Grey + Glacier Blue
+      gradient: `
+        radial-gradient(circle at 50% -20%, rgba(78, 205, 196, 0.2) 0%, transparent 70%),
+        linear-gradient(180deg, #3D3D3D 0%, #2b2b2b 100%)
+      `,
+      bgColor: '#3D3D3D'
     },
-    emerald: {
-      main: '#10AC84', // Jungle Green
-      light: '#1DD1A1',
-      dark: '#0B7558',
+    socialBlue: {
+      type: 'light',
+      primary: '#0084FF',
+      background: '#F0F2F5', // Light Grey
+      paper: '#FFFFFF',
+      text: '#333333',
+      accent: '#0084FF',
+      secondary: '#E4E6EB',
+      gradient: 'linear-gradient(180deg, #E1F5FE 0%, #F0F2F5 100%)',
+      bgColor: '#F0F2F5'
+    },
+    romanticPink: {
+      type: 'light',
+      primary: '#FF4D6D',
+      background: '#FFF0F3', // Light Pink
+      paper: '#FFFFFF',
+      text: '#4A151F', // Deep Red/Brown
+      accent: '#FF4D6D',
+      secondary: '#FFC2D1',
+      gradient: 'linear-gradient(180deg, #FFF0F3 0%, #FFE4E6 100%)',
+      bgColor: '#FFF0F3'
+    },
+    businessBlue: {
+      type: 'light',
+      primary: '#3B82F6', // Bright Blue
+      background: '#F8FAFC', // Cool White
+      paper: '#FFFFFF',
+      text: '#1E3A8A', // Deep Blue Text
+      accent: '#3B82F6',
+      secondary: '#E2E8F0',
+      gradient: 'linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 100%)', // Subtle white-to-grey
+      bgColor: '#F8FAFC'
     }
   }
 
   const createMuiTheme = (mode, colorTheme) => {
-    // 强制使用深色模式逻辑，但允许切换高亮色
-    const colors = colorThemes[colorTheme] || colorThemes.ocean
-    const isDark = true 
+    // Fallback to deepSpace if invalid theme
+    const colors = colorThemes[colorTheme] || colorThemes.deepSpace
+    
+    // Always force dark mode base structure for these themes as requested
+    // even if system is light, these specific themes are "Atmosphere" (dark-ish)
+    // but we respect the "mode" variable for MUI's internal calculation if needed, 
+    // though here we are customizing heavily.
+    
+    const isDark = colors.type === 'dark'
 
     return createTheme({
       palette: {
-        mode: 'dark',
+        mode: colors.type, // Use the theme's type (light/dark)
         primary: {
-          main: colors.main,
-          light: colors.light,
-          dark: colors.dark,
+          main: colors.primary,
+        },
+        secondary: {
+          main: colors.secondary,
         },
         background: {
-          default: 'transparent',
-          paper: 'rgba(255, 255, 255, 0.03)', // Extremely airy/subtle
+          default: colors.background,
+          paper: colors.paper,
         },
         text: {
-          primary: '#F5F6FA',
-          secondary: 'rgba(245, 246, 250, 0.6)',
+          primary: colors.text,
+          secondary: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
         },
         action: {
-          hover: 'rgba(255, 255, 255, 0.05)',
-          selected: 'rgba(255, 255, 255, 0.1)',
+          hover: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+          selected: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
         }
       },
       shape: {
-        borderRadius: 6, // Minimal radius
+        borderRadius: 8,
       },
       typography: {
         fontFamily: '"SF Pro Display", "Inter", "Roboto", sans-serif',
         h6: {
-            fontWeight: 600,
-            letterSpacing: '0.5px',
+          fontWeight: 600,
+          letterSpacing: '0.5px',
         },
         button: {
-            textTransform: 'none',
-            fontWeight: 600,
-            letterSpacing: '0.5px',
+          textTransform: 'none',
+          fontWeight: 600,
+          letterSpacing: '0.5px',
         }
       },
       components: {
         MuiCssBaseline: {
           styleOverrides: `
             :root {
-              --mui-palette-primary-main: ${colors.main};
-              --mui-palette-primary-light: ${colors.light};
-              --mui-palette-primary-dark: ${colors.dark};
-              --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-              --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+              --mui-palette-primary-main: ${colors.primary};
+              --glass-border: ${isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.05)'};
+              --glass-shadow: ${isDark ? '0 8px 32px 0 rgba(0, 0, 0, 0.2)' : '0 8px 24px 0 rgba(0, 0, 0, 0.05)'};
             }
             body {
-              background-color: #0f172a;
-              background-image: 
-                radial-gradient(at 0% 0%, rgba(46, 134, 222, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(95, 39, 205, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(16, 172, 132, 0.1) 0px, transparent 50%),
-                radial-gradient(at 0% 100%, rgba(255, 107, 107, 0.1) 0px, transparent 50%);
+              background-color: ${colors.bgColor};
+              background-image: ${colors.gradient};
               background-attachment: fixed;
               background-size: cover;
               min-height: 100vh;
-              color: #F5F6FA;
+              color: ${colors.text};
+              transition: background 0.5s ease;
             }
             /* Scrollbar styling */
             ::-webkit-scrollbar {
@@ -125,11 +187,11 @@ export const ThemeProvider = ({ children }) => {
               background: transparent;
             }
             ::-webkit-scrollbar-thumb {
-              background: rgba(255, 255, 255, 0.1);
+              background: ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
               border-radius: 4px;
             }
             ::-webkit-scrollbar-thumb:hover {
-              background: rgba(255, 255, 255, 0.2);
+              background: ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'};
             }
           `,
         },
@@ -137,52 +199,54 @@ export const ThemeProvider = ({ children }) => {
           styleOverrides: {
             root: {
               backgroundImage: 'none',
-              backgroundColor: 'rgba(255, 255, 255, 0.03)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-              borderRadius: '6px', // Explicitly setting slightly smaller radius for Papers
+              backgroundColor: isDark ? colors.paper : 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: isDark ? 'blur(20px)' : 'blur(10px)', // Reduced blur for performance, still glassy if opacity used
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(255, 255, 255, 0.4)',
+              boxShadow: isDark ? '0 4px 20px rgba(0, 0, 0, 0.2)' : '0 4px 20px rgba(0, 0, 0, 0.05)',
             },
           },
         },
         MuiAppBar: {
           styleOverrides: {
             root: {
-              backgroundColor: 'transparent !important',
-              backdropFilter: 'blur(10px)',
-              borderBottom: 'none',
+              backgroundColor: isDark ? 'rgba(0,0,0,0.2) !important' : 'rgba(255,255,255,0.7) !important', // Slight darkening for legibility
+              backdropFilter: 'blur(12px)',
+              borderBottom: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
               boxShadow: 'none',
+              color: isDark ? '#fff' : '#000',
             },
           },
         },
         MuiDrawer: {
             styleOverrides: {
                 paper: {
-                    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-                    backdropFilter: 'blur(20px)',
-                    borderRight: 'none',
+                    backgroundColor: colors.paper,
+                    borderRight: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
                 }
             }
         },
         MuiButton: {
             styleOverrides: {
                 root: {
-                    borderRadius: 4, // Button radius also adjusted to match
+                    borderRadius: 6,
                 },
                 contained: {
-                    background: colors.main,
-                    boxShadow: `0 8px 16px -4px ${colors.main}66`, // Soft glow
-                    color: 'white',
+                    background: colors.primary,
+                    color: ['deepSpace', 'future'].includes(colorTheme) ? '#000' : '#fff', // Black text for bright neon themes, White for others
+                    fontWeight: 700,
+                    boxShadow: isDark ? `0 0 15px ${colors.primary}40` : '0 2px 8px rgba(0,0,0,0.1)', // Glow effect
                     '&:hover': {
-                        background: colors.dark,
-                        boxShadow: `0 12px 20px -4px ${colors.main}88`,
+                        background: colors.primary,
+                        filter: 'brightness(1.1)',
+                        boxShadow: isDark ? `0 0 25px ${colors.primary}60` : '0 4px 12px rgba(0,0,0,0.15)',
                     }
                 },
                 outlined: {
-                    borderColor: 'rgba(255,255,255,0.2)',
+                    borderColor: colors.primary,
+                    color: colors.primary,
                     '&:hover': {
-                        borderColor: colors.main,
-                        backgroundColor: `${colors.main}1a`,
+                        borderColor: colors.primary,
+                        backgroundColor: `${colors.primary}1a`,
                     }
                 }
             }
@@ -190,9 +254,13 @@ export const ThemeProvider = ({ children }) => {
         MuiChip: {
             styleOverrides: {
                 root: {
-                    backdropFilter: 'blur(10px)',
-                    backgroundColor: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+                    '&.MuiChip-colorPrimary': {
+                        backgroundColor: `${colors.primary}20`,
+                        borderColor: colors.primary,
+                        color: colors.primary,
+                    }
                 }
             }
         }
