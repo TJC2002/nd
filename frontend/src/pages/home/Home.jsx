@@ -151,138 +151,97 @@ const Home = () => {
         position="fixed" 
         sx={{ 
           zIndex: theme.zIndex.drawer + 1,
-          backdropFilter: 'blur(10px)',
-          backgroundColor: 'rgba(0,0,0,0.3)', // 更通透的背景
-          boxShadow: 'none', // 去掉默认阴影，使用边框分隔
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+          backgroundColor: 'transparent',
+          boxShadow: 'none', 
+          pt: 1, // Slight top padding
         }}
       >
-        <Toolbar sx={{ height: 64 }}>
+        <Toolbar sx={{ height: 80, px: 4 }}> {/* Increased height and padding */}
           <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
             <Typography 
                 variant="h5" 
                 component="div" 
                 sx={{ 
-                    mr: 4, 
+                    mr: 6, 
                     display: { xs: 'none', sm: 'block' },
-                    fontFamily: '"Orbitron", "Roboto", sans-serif',
-                    fontWeight: 900,
-                    letterSpacing: '2px',
-                    background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    textShadow: '0 0 20px ' + theme.palette.primary.dark,
-                    userSelect: 'none'
+                    fontFamily: '"SF Pro Display", "Roboto", sans-serif',
+                    fontWeight: 800,
+                    letterSpacing: '-0.5px',
+                    color: '#fff',
+                    userSelect: 'none',
+                    fontSize: '1.5rem',
                 }}
             >
-              ND DRIVE
+              ND<Box component="span" sx={{ color: theme.palette.primary.main }}>.</Box>
             </Typography>
             <TextField
               size="small"
-              placeholder="搜索文件..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
-                width: 300,
+                width: 360,
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  borderRadius: 8,
+                  borderRadius: 20, // Fully rounded
                   transition: 'all 0.3s ease',
+                  border: '1px solid transparent',
+                  pl: 2,
+                  '& fieldset': { border: 'none' }, // Remove default border
                   '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      boxShadow: '0 0 10px rgba(255,255,255,0.1)'
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
                   },
                   '&.Mui-focused': {
-                      width: 400,
-                      backgroundColor: 'rgba(0,0,0,0.2)',
-                      boxShadow: '0 0 15px ' + theme.palette.primary.main
+                      width: 420,
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      border: `1px solid ${theme.palette.primary.main}40`,
                   }
                 },
+                '& input': {
+                    color: 'white',
+                    fontWeight: 500,
+                }
               }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchOutlined />
+                    <SearchOutlined sx={{ color: 'rgba(255,255,255,0.4)' }} />
                   </InputAdornment>
                 ),
               }}
             />
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ThemeSwitcher />
-            <Tooltip title="音乐播放器">
-              <IconButton color="inherit" onClick={() => toggleDrawer(true)}>
+            
+            <IconButton 
+                sx={{ 
+                    color: 'rgba(255,255,255,0.7)', 
+                    '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' } 
+                }}
+                onClick={() => toggleDrawer(true)}
+            >
                 <PlayCircleFilled />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="上传任务">
-              <Box sx={{ position: 'relative' }}>
-                <IconButton
-                  color="inherit"
-                  onClick={handleUploadClick}
-                  onMouseEnter={handleUploadClick}
-                >
-                  <CloudUploadOutlined />
-                </IconButton>
-                {getActiveTasks().length > 0 && (
-                  <Box sx={{
-                    position: 'absolute',
-                    top: -5,
-                    right: -5,
-                    backgroundColor: 'primary.main',
-                    color: 'white',
-                    borderRadius: '50%',
-                    minWidth: '16px',
-                    height: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                  }}>
-                    {getActiveTasks().length}
-                  </Box>
-                )}
-              </Box>
-            </Tooltip>
-            <Tooltip title="通知">
-              <IconButton color="inherit">
-                <Box sx={{ position: 'relative' }}>
-                  <NotificationsOutlined />
-                  {notifications > 0 && (
-                    <Box sx={{
-                      position: 'absolute',
-                      top: -5,
-                      right: -5,
-                      backgroundColor: 'error.main',
-                      color: 'white',
-                      borderRadius: '50%',
-                      minWidth: '16px',
-                      height: '16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '10px',
-                      fontWeight: 'bold',
-                    }}>
-                      {notifications}
-                    </Box>
-                  )}
-                </Box>
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="帮助">
-              <IconButton color="inherit">
-                <HelpOutline />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="设置">
-              <IconButton color="inherit" onClick={() => handleTabChange('settings')}>
-                <SettingsOutlined />
-              </IconButton>
-            </Tooltip>
+            </IconButton>
+
+            <IconButton
+                sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' } }}
+                onClick={handleUploadClick}
+            >
+                <CloudUploadOutlined />
+            </IconButton>
+
             <Avatar
-              sx={{ width: 32, height: 32, cursor: 'pointer' }}
+              sx={{ 
+                  width: 38, 
+                  height: 38, 
+                  cursor: 'pointer',
+                  ml: 2,
+                  bgcolor: theme.palette.primary.main,
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold',
+                  boxShadow: `0 4px 12px ${theme.palette.primary.main}40`
+              }}
               onClick={(e) => setAnchorEl(e.currentTarget)}
             >
               {user?.username?.charAt(0)?.toUpperCase() || 'U'}
@@ -290,54 +249,53 @@ const Home = () => {
           </Box>
         </Toolbar>
       </AppBar>
-      {/* <Divider /> 移除这个可能导致布局问题的 Divider */}
-      <Box sx={{ display: 'flex', pt: '64px', height: '100vh', overflow: 'hidden' }}>
+
+      <Box sx={{ display: 'flex', pt: 0, height: '100vh', overflow: 'hidden' }}>
         <Drawer
           variant="permanent"
           open={sidebarOpen}
           sx={{
-            width: sidebarOpen ? 240 : 64, // 收起时稍微宽一点点，更美观
+            width: sidebarOpen ? 260 : 80, 
             flexShrink: 0,
             '& .MuiDrawer-paper': {
-              width: sidebarOpen ? 240 : 64,
+              width: sidebarOpen ? 260 : 80,
               boxSizing: 'border-box',
-              top: '64px', // 关键：让 Drawer 从 Header 下方开始
-              height: 'calc(100vh - 64px)', // 关键：高度减去 Header 高度
-              backgroundColor: 'rgba(0, 0, 0, 0.2)', // 半透明背景
-              backdropFilter: 'blur(10px)', // 磨砂效果
-              borderRight: '1px solid rgba(255, 255, 255, 0.08)', // 细腻的边框
-              transition: theme.transitions.create(['width', 'background-color'], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.standard,
-              }),
+              top: 0, 
+              height: '100vh', 
+              backgroundColor: 'transparent', 
+              backdropFilter: 'none', 
+              borderRight: 'none',
+              paddingTop: '100px', // Push content down below custom header
+              paddingLeft: '16px',
+              paddingRight: '16px',
             },
           }}
         >
-          {/* 移除了原来的空 Toolbar 占位符，因为现在通过 top: 64px 精确定位了 */}
-          <Box sx={{ overflow: 'auto', display: 'flex', flexDirection: 'column', height: '100%', py: 2 }}>
+          <Box sx={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
             <List className="sidebar-menu" sx={{ flex: 1, padding: 0 }}>
               {['files', 'sync', 'download', 'media', 'share', 'settings'].map((tab) => (
-                <ListItem key={tab} disablePadding sx={{ display: 'block', mb: 0.5 }}>
+                <ListItem key={tab} disablePadding sx={{ display: 'block', mb: 1 }}>
                   <ListItemButton
                     selected={activeTab === tab}
                     onClick={() => handleTabChange(tab)}
                     sx={{
-                      minHeight: 48,
+                      minHeight: 52, // Taller buttons
                       justifyContent: sidebarOpen ? 'initial' : 'center',
-                      px: 2.5,
-                      mx: 1, // 左右留白，做成悬浮胶囊效果
-                      borderRadius: 2,
-                      transition: 'all 0.2s',
+                      px: 2,
+                      borderRadius: 4, // More rounded
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      color: 'rgba(255,255,255,0.6)',
                       '&:hover': {
-                         backgroundColor: 'rgba(255,255,255,0.08)'
+                         backgroundColor: 'rgba(255,255,255,0.05)',
+                         color: 'white',
+                         transform: 'translateX(4px)',
                       },
                       '&.Mui-selected': {
-                        backgroundColor: theme.palette.primary.main + '20', // 半透明的主色
-                        color: theme.palette.primary.main,
-                        border: `1px solid ${theme.palette.primary.main}40`,
-                        '&:hover': {
-                          backgroundColor: theme.palette.primary.main + '30',
-                        },
+                        backgroundColor: 'rgba(255,255,255,0.1) !important',
+                        backdropFilter: 'blur(10px)',
+                        color: 'white',
+                        fontWeight: 600,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                         '& .MuiListItemIcon-root': {
                           color: theme.palette.primary.main,
                         },
@@ -347,61 +305,46 @@ const Home = () => {
                     <ListItemIcon
                       sx={{
                         minWidth: 0,
-                        mr: sidebarOpen ? 2 : 'auto', // 稍微减小间距
+                        mr: sidebarOpen ? 2.5 : 'auto',
                         justifyContent: 'center',
-                        color: activeTab === tab ? 'inherit' : 'text.secondary',
+                        color: 'inherit',
                       }}
                     >
-                      {tab === 'files' && <Folder />}
-                      {tab === 'sync' && <CloudUploadOutlined />}
-                      {tab === 'download' && <Description />}
-                      {tab === 'media' && <PlayCircleFilled />}
-                      {tab === 'share' && <ShareOutlined />}
-                      {tab === 'settings' && <SettingsOutlined />}
+                      {tab === 'files' && <Folder fontSize={sidebarOpen ? "medium" : "large"} />}
+                      {tab === 'sync' && <CloudUploadOutlined fontSize={sidebarOpen ? "medium" : "large"} />}
+                      {tab === 'download' && <Description fontSize={sidebarOpen ? "medium" : "large"} />}
+                      {tab === 'media' && <PlayCircleFilled fontSize={sidebarOpen ? "medium" : "large"} />}
+                      {tab === 'share' && <ShareOutlined fontSize={sidebarOpen ? "medium" : "large"} />}
+                      {tab === 'settings' && <SettingsOutlined fontSize={sidebarOpen ? "medium" : "large"} />}
                     </ListItemIcon>
-                    <ListItemText 
-                      primary={
-                        tab === 'files' ? '文件管理' :
-                        tab === 'sync' ? '同步备份' :
-                        tab === 'download' ? '离线下载' :
-                        tab === 'media' ? '影音中心' :
-                        tab === 'share' ? '分享协同' :
-                        '系统设置'
-                      } 
-                      sx={{ opacity: sidebarOpen ? 1 : 0 }} 
-                    />
+                    {sidebarOpen && <ListItemText primary={
+                        tab === 'files' ? 'Files' :
+                        tab === 'sync' ? 'Sync' :
+                        tab === 'download' ? 'Downloads' :
+                        tab === 'media' ? 'Media' :
+                        tab === 'share' ? 'Shared' :
+                        'Settings'
+                    } primaryTypographyProps={{ fontSize: '0.95rem', fontWeight: 500 }} />}
                   </ListItemButton>
                 </ListItem>
               ))}
             </List>
-            <Divider />
-            <List>
-               <ListItem disablePadding sx={{ display: 'block' }}>
-                  <ListItemButton
+            
+            <Box sx={{ pb: 4, display: 'flex', justifyContent: sidebarOpen ? 'flex-end' : 'center' }}>
+                  <IconButton
                     onClick={() => setSidebarOpen(!sidebarOpen)}
                     sx={{
-                      minHeight: 48,
-                      justifyContent: sidebarOpen ? 'initial' : 'center',
-                      px: 2.5,
+                      color: 'rgba(255,255,255,0.4)',
+                      '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' }
                     }}
                   >
-                     <ListItemIcon
-                      sx={{
-                        minWidth: 0,
-                        mr: sidebarOpen ? 3 : 'auto',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {sidebarOpen ? <ChevronLeft /> : <ChevronRight />}
-                    </ListItemIcon>
-                    <ListItemText primary="收起" sx={{ opacity: sidebarOpen ? 1 : 0 }} />
-                  </ListItemButton>
-               </ListItem>
-            </List>
+                     {sidebarOpen ? <ChevronLeft /> : <ChevronRight />}
+                  </IconButton>
+            </Box>
           </Box>
         </Drawer>
-        <Box component="main" sx={{ flexGrow: 1, width: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <Box className="main-content" sx={{ flex: 1, overflow: 'auto' }}>
+        <Box component="main" sx={{ flexGrow: 1, width: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', pt: '100px', pr: 4, pb: 2 }}>
+          <Box className="main-content" sx={{ flex: 1, overflow: 'auto', borderRadius: 8 }}> {/* Added container radius */}
             {renderContent()}
           </Box>
         </Box>

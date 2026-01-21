@@ -56,6 +56,7 @@ import {
   AudioFile,
   InsertDriveFile
 } from '@mui/icons-material'
+import { FcFolder, FcImageFile, FcAudioFile, FcVideoFile, FcDocument, FcFile } from 'react-icons/fc'
 import { fileApi } from '../../services/api'
 import { useUpload } from '../../context/UploadContext'
 import './FileManagement.css' // Ensure this file exists or styles are inline
@@ -66,12 +67,12 @@ const GlassCard = ({ children, sx, ...props }) => (
   <Paper
     elevation={0}
     sx={{
-      background: 'rgba(30, 30, 30, 0.6)',
-      backdropFilter: 'blur(12px)',
+      background: 'rgba(255, 255, 255, 0.03)',
+      backdropFilter: 'blur(16px)',
       border: '1px solid rgba(255, 255, 255, 0.08)',
-      borderRadius: 4,
+      borderRadius: 6, // 24px radius
       overflow: 'hidden',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       ...sx
     }}
     {...props}
@@ -217,15 +218,25 @@ const FileManagement = () => {
   // --- Render Helpers ---
 
   const getFileIcon = (file) => {
-    if (file.isFolder) return <Folder sx={{ fontSize: 48, color: '#FFD700' }} /> // Gold folder
+    const size = 64;
     
-    // Cyberpunk/Neon colors for file types
-    const mime = file.mimeType || ''
-    if (mime.includes('image')) return <ImageIcon sx={{ fontSize: 40, color: '#00fff5' }} /> // Cyan
-    if (mime.includes('audio')) return <AudioFile sx={{ fontSize: 40, color: '#ff00ff' }} /> // Magenta
-    if (mime.includes('video')) return <PlayCircleFilled sx={{ fontSize: 40, color: '#bc13fe' }} /> // Purple
-    if (mime.includes('pdf')) return <Description sx={{ fontSize: 40, color: '#ff4d4d' }} /> // Red
-    return <InsertDriveFile sx={{ fontSize: 40, color: '#7df9ff' }} /> // Electric Blue
+    if (file.isFolder) {
+        return <FcFolder size={size} />;
+    }
+    
+    const mime = file.mimeType || '';
+    
+    if (mime.includes('image')) {
+        return <FcImageFile size={size} />;
+    } else if (mime.includes('audio')) {
+        return <FcAudioFile size={size} />;
+    } else if (mime.includes('video')) {
+        return <FcVideoFile size={size} />;
+    } else if (mime.includes('pdf')) {
+        return <FcDocument size={size} />;
+    } else {
+        return <FcFile size={size} />;
+    }
   }
 
   const formatSize = (bytes) => {
@@ -252,38 +263,47 @@ const FileManagement = () => {
   // --- Render ---
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
       
       {/* --- HEADER SECTION --- */}
       <Box sx={{ mb: 4 }}>
         {/* Row 1: Breadcrumbs & Search */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
           <Breadcrumbs 
             separator={<NavigateNext fontSize="small" sx={{ color: 'rgba(255,255,255,0.3)' }} />}
             sx={{ '& .MuiBreadcrumbs-ol': { alignItems: 'center' } }}
           >
             <Link
-              underline="hover"
+              underline="none"
               color={!currentFolderId ? "primary" : "inherit"}
               onClick={() => navigate('/')}
-              sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', color: !currentFolderId ? '#00e5ff' : 'rgba(255,255,255,0.7)' }}
+              sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  cursor: 'pointer', 
+                  color: !currentFolderId ? 'white' : 'rgba(255,255,255,0.5)',
+                  fontSize: '1.5rem',
+                  fontWeight: 700,
+                  transition: 'color 0.2s',
+                  '&:hover': { color: 'white' }
+              }}
             >
-              <Home sx={{ mr: 0.5 }} fontSize="inherit" />
-              Root
+              Files
             </Link>
             {breadcrumbPath.map((folder, index) => {
                 const isLast = index === breadcrumbPath.length - 1
                 return (
                     <Link
                         key={folder.id}
-                        underline="hover"
-                        color={isLast ? "primary" : "inherit"}
+                        underline="none"
                         onClick={() => navigate(`?folderId=${folder.id}`)}
                         sx={{ 
                             cursor: 'pointer', 
-                            color: isLast ? '#00e5ff' : 'rgba(255,255,255,0.7)',
-                            fontWeight: isLast ? 'bold' : 'normal',
-                            textShadow: isLast ? '0 0 10px rgba(0,229,255,0.5)' : 'none'
+                            color: isLast ? 'white' : 'rgba(255,255,255,0.5)',
+                            fontSize: '1.5rem',
+                            fontWeight: 700,
+                            transition: 'color 0.2s',
+                            '&:hover': { color: 'white' }
                         }}
                     >
                         {folder.fileName}
@@ -294,20 +314,17 @@ const FileManagement = () => {
         </Box>
 
         {/* Row 2: Actions & Tools */}
-        <GlassCard sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
               variant="contained"
               startIcon={<CloudUploadOutlined />}
               onClick={() => { setCurrentFolder(currentFolderId); setDialogOpen(true); }}
               sx={{
-                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
-                color: 'white',
-                borderRadius: 2,
-                px: 3,
-                textTransform: 'none',
-                fontWeight: 'bold'
+                borderRadius: 4,
+                px: 4,
+                py: 1,
+                fontSize: '1rem',
               }}
             >
               Upload
@@ -317,11 +334,11 @@ const FileManagement = () => {
               startIcon={<CreateNewFolderOutlined />}
               onClick={() => setCreateFolderDialog(true)}
               sx={{
-                borderColor: 'rgba(255,255,255,0.3)',
+                borderRadius: 4,
+                px: 3,
                 color: 'white',
-                borderRadius: 2,
-                textTransform: 'none',
-                '&:hover': { borderColor: '#00e5ff', color: '#00e5ff', bgcolor: 'rgba(0,229,255,0.05)' }
+                borderColor: 'rgba(255,255,255,0.2)',
+                '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.05)' }
               }}
             >
               New Folder
@@ -335,32 +352,29 @@ const FileManagement = () => {
                             color="error"
                             startIcon={<DeleteOutline />}
                             onClick={handleDelete}
-                            sx={{ borderRadius: 2, textTransform: 'none', whiteSpace: 'nowrap', minWidth: 'fit-content' }}
+                            sx={{ borderRadius: 4, px: 3 }}
                         >
                             Delete ({selectedFiles.size})
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            startIcon={<ShareOutlined />}
-                            sx={{ borderRadius: 2, textTransform: 'none', color: 'rgba(255,255,255,0.7)', borderColor: 'rgba(255,255,255,0.2)' }}
-                        >
-                            Share
                         </Button>
                     </Box>
                 </Fade>
             )}
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton onClick={(e) => setAnchorElSort(e.currentTarget)}>
-                <Sort sx={{ color: 'white' }} />
-            </IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+             <Button
+                endIcon={<Sort />}
+                onClick={(e) => setAnchorElSort(e.currentTarget)}
+                sx={{ color: 'rgba(255,255,255,0.7)', textTransform: 'none', fontSize: '0.95rem' }}
+             >
+                Sort by: {sortBy}
+             </Button>
             <Menu
                 anchorEl={anchorElSort}
                 open={Boolean(anchorElSort)}
                 onClose={() => setAnchorElSort(null)}
                 PaperProps={{
-                    sx: { bgcolor: '#1e1e1e', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }
+                    sx: { bgcolor: '#1e1e1e', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 3 }
                 }}
             >
                 <MenuItem onClick={() => { setSortBy('name'); setAnchorElSort(null); }}>Name</MenuItem>
@@ -368,14 +382,15 @@ const FileManagement = () => {
                 <MenuItem onClick={() => { setSortBy('size'); setAnchorElSort(null); }}>Size</MenuItem>
             </Menu>
 
-            <Box sx={{ bgcolor: 'rgba(0,0,0,0.3)', borderRadius: 2, p: 0.5, display: 'flex' }}>
+            <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 3, p: 0.5, display: 'flex' }}>
                 <IconButton 
                     size="small" 
                     onClick={() => setViewMode('grid')}
                     sx={{ 
-                        color: viewMode === 'grid' ? '#00e5ff' : 'rgba(255,255,255,0.3)',
-                        bgcolor: viewMode === 'grid' ? 'rgba(0,229,255,0.1)' : 'transparent',
-                        borderRadius: 1.5
+                        color: viewMode === 'grid' ? 'black' : 'rgba(255,255,255,0.5)',
+                        bgcolor: viewMode === 'grid' ? 'white' : 'transparent',
+                        borderRadius: 2.5,
+                        '&:hover': { bgcolor: viewMode === 'grid' ? 'white' : 'rgba(255,255,255,0.1)' }
                     }}
                 >
                     <GridViewRounded fontSize="small" />
@@ -384,16 +399,17 @@ const FileManagement = () => {
                     size="small" 
                     onClick={() => setViewMode('list')}
                     sx={{ 
-                        color: viewMode === 'list' ? '#00e5ff' : 'rgba(255,255,255,0.3)',
-                        bgcolor: viewMode === 'list' ? 'rgba(0,229,255,0.1)' : 'transparent',
-                        borderRadius: 1.5
+                        color: viewMode === 'list' ? 'black' : 'rgba(255,255,255,0.5)',
+                        bgcolor: viewMode === 'list' ? 'white' : 'transparent',
+                        borderRadius: 2.5,
+                        '&:hover': { bgcolor: viewMode === 'list' ? 'white' : 'rgba(255,255,255,0.1)' }
                     }}
                 >
                     <TableRowsRounded fontSize="small" />
                 </IconButton>
             </Box>
           </Box>
-        </GlassCard>
+        </Box>
       </Box>
 
       {/* --- CONTENT SECTION --- */}
@@ -408,63 +424,74 @@ const FileManagement = () => {
         ) : (
             <>
                 {viewMode === 'grid' ? (
-                    <Grid container spacing={2}>
+                    <Grid container spacing={3}>
                         {filteredFiles.map((file) => {
                             const isSelected = selectedFiles.has(file.id)
                             return (
-                                <Grid item xs={6} sm={4} md={3} lg={2} key={file.id}>
+                                <Grid item xs={6} sm={4} md={3} lg={2.4} xl={2} key={file.id}> {/* Larger grid items */}
                                     <GlassCard
                                         sx={{
                                             position: 'relative',
                                             cursor: 'pointer',
-                                            height: '100%',
-                                            border: isSelected ? '1px solid #00e5ff' : '1px solid rgba(255, 255, 255, 0.08)',
-                                            boxShadow: isSelected ? '0 0 15px rgba(0, 229, 255, 0.2)' : 'none',
+                                            height: 280, // Taller cards
+                                            border: isSelected ? '2px solid #2E86DE' : '1px solid rgba(255, 255, 255, 0.05)',
+                                            boxShadow: isSelected ? '0 0 20px rgba(46, 134, 222, 0.3)' : 'none',
+                                            background: isSelected ? 'rgba(46, 134, 222, 0.05)' : 'rgba(255, 255, 255, 0.02)',
                                             '&:hover': {
-                                                transform: 'translateY(-4px)',
-                                                bgcolor: 'rgba(40,40,40,0.8)',
+                                                transform: 'translateY(-8px)',
+                                                bgcolor: 'rgba(255,255,255,0.05)',
+                                                boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
                                                 '& .file-actions': { opacity: 1 }
                                             }
                                         }}
                                         onClick={() => handleFileClick(file)}
                                     >
                                         <Box 
-                                            sx={{ position: 'absolute', top: 8, left: 8, zIndex: 2 }}
+                                            sx={{ position: 'absolute', top: 12, left: 12, zIndex: 2 }}
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <Checkbox 
                                                 checked={isSelected}
                                                 onChange={() => toggleSelection(file.id)}
                                                 size="small"
-                                                icon={<Box sx={{ width: 20, height: 20, borderRadius: 1, border: '2px solid rgba(255,255,255,0.3)' }} />}
-                                                checkedIcon={<CheckCircle sx={{ color: '#00e5ff' }} />}
+                                                icon={<Box sx={{ width: 22, height: 22, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)' }} />}
+                                                checkedIcon={<CheckCircle sx={{ color: '#2E86DE', fontSize: 26 }} />}
                                             />
                                         </Box>
                                         
-                                        <Box className="file-actions" sx={{ position: 'absolute', top: 8, right: 8, opacity: 0, transition: 'opacity 0.2s', zIndex: 2 }}>
-                                            <IconButton size="small" sx={{ color: 'white', bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'black' } }}>
+                                        <Box className="file-actions" sx={{ position: 'absolute', top: 12, right: 12, opacity: 0, transition: 'opacity 0.2s', zIndex: 2 }}>
+                                            <IconButton size="small" sx={{ color: 'white', bgcolor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', '&:hover': { bgcolor: 'black' } }}>
                                                 <MoreVert fontSize="small" />
                                             </IconButton>
                                         </Box>
 
-                                        <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160 }}>
+                                        <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '65%' }}>
                                             {getFileIcon(file)}
                                         </Box>
                                         
-                                        <Box sx={{ p: 1.5, bgcolor: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <Typography variant="subtitle2" noWrap title={file.fileName} sx={{ color: 'white', fontWeight: 500 }}>
+                                        <Box sx={{ p: 2, height: '35%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: 'rgba(0,0,0,0.1)' }}>
+                                            <Typography 
+                                                variant="subtitle1" 
+                                                title={file.fileName} 
+                                                sx={{ 
+                                                    color: 'white', 
+                                                    fontWeight: 600, 
+                                                    mb: 0.5,
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    textAlign: 'center'
+                                                }}
+                                            >
                                                 {file.fileName}
                                             </Typography>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                                                    {file.createdAt?.split('T')[0]}
-                                                </Typography>
-                                                {!file.isFolder && (
-                                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                                                        {formatSize(file.fileSize)}
-                                                    </Typography>
+                                            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                                                {file.isFolder ? (
+                                                    file.createdAt?.split('T')[0]
+                                                ) : (
+                                                    `${formatSize(file.fileSize)} • ${file.createdAt?.split('T')[0]}`
                                                 )}
-                                            </Box>
+                                            </Typography>
                                         </Box>
                                     </GlassCard>
                                 </Grid>
@@ -472,7 +499,7 @@ const FileManagement = () => {
                         })}
                     </Grid>
                 ) : (
-                    <TableContainer component={GlassCard}>
+                    <TableContainer component={GlassCard} sx={{ borderRadius: 4 }}>
                         <Table>
                             <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.2)' }}>
                                 <TableRow>
