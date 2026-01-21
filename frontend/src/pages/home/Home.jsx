@@ -14,6 +14,9 @@ import {
   Menu,
   MenuItem,
   ListSubheader,
+  List,
+  ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   Drawer,
@@ -47,6 +50,7 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import { useTheme as useAppTheme } from '../../context/ThemeContext'
 import { useUpload } from '../../context/UploadContext'
+import { useMusic } from '../../context/MusicContext'
 import ThemeSwitcher from '../../components/ThemeSwitcher'
 import UploadDialog from '../../components/upload/UploadDialog'
 import UploadPopover from '../../components/upload/UploadPopover'
@@ -58,6 +62,7 @@ const Home = () => {
   const { user, logout } = useAuth()
   const { mode, colorTheme, effectiveMode } = useAppTheme()
   const { dialogOpen, popoverOpen, setPopoverOpen, getActiveTasks } = useUpload()
+  const { toggleDrawer } = useMusic()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const navigate = useNavigate()
@@ -142,11 +147,35 @@ const Home = () => {
 
   return (
     <Box className="home-container">
-      <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
-        <Toolbar>
+      <AppBar 
+        position="fixed" 
+        sx={{ 
+          zIndex: theme.zIndex.drawer + 1,
+          backdropFilter: 'blur(10px)',
+          backgroundColor: 'rgba(0,0,0,0.3)', // 更通透的背景
+          boxShadow: 'none', // 去掉默认阴影，使用边框分隔
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+        }}
+      >
+        <Toolbar sx={{ height: 64 }}>
           <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-            <Typography variant="h6" component="div" sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }}>
-              ND网盘
+            <Typography 
+                variant="h5" 
+                component="div" 
+                sx={{ 
+                    mr: 4, 
+                    display: { xs: 'none', sm: 'block' },
+                    fontFamily: '"Orbitron", "Roboto", sans-serif',
+                    fontWeight: 900,
+                    letterSpacing: '2px',
+                    background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textShadow: '0 0 20px ' + theme.palette.primary.dark,
+                    userSelect: 'none'
+                }}
+            >
+              ND DRIVE
             </Typography>
             <TextField
               size="small"
@@ -154,9 +183,20 @@ const Home = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
-                flexGrow: 1,
+                width: 300,
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: 8,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 0 10px rgba(255,255,255,0.1)'
+                  },
+                  '&.Mui-focused': {
+                      width: 400,
+                      backgroundColor: 'rgba(0,0,0,0.2)',
+                      boxShadow: '0 0 15px ' + theme.palette.primary.main
+                  }
                 },
               }}
               InputProps={{
@@ -170,6 +210,11 @@ const Home = () => {
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <ThemeSwitcher />
+            <Tooltip title="音乐播放器">
+              <IconButton color="inherit" onClick={() => toggleDrawer(true)}>
+                <PlayCircleFilled />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="上传任务">
               <Box sx={{ position: 'relative' }}>
                 <IconButton
@@ -245,75 +290,114 @@ const Home = () => {
           </Box>
         </Toolbar>
       </AppBar>
-      <Divider />
-      <Box sx={{ display: 'flex', pt: 8, flex: 1, overflow: 'hidden' }}>
+      {/* <Divider /> 移除这个可能导致布局问题的 Divider */}
+      <Box sx={{ display: 'flex', pt: '64px', height: '100vh', overflow: 'hidden' }}>
         <Drawer
           variant="permanent"
           open={sidebarOpen}
           sx={{
-            width: sidebarOpen ? 240 : 56,
+            width: sidebarOpen ? 240 : 64, // 收起时稍微宽一点点，更美观
             flexShrink: 0,
             '& .MuiDrawer-paper': {
-              width: sidebarOpen ? 240 : 56,
+              width: sidebarOpen ? 240 : 64,
               boxSizing: 'border-box',
-              transition: theme.transitions.create('width', {
+              top: '64px', // 关键：让 Drawer 从 Header 下方开始
+              height: 'calc(100vh - 64px)', // 关键：高度减去 Header 高度
+              backgroundColor: 'rgba(0, 0, 0, 0.2)', // 半透明背景
+              backdropFilter: 'blur(10px)', // 磨砂效果
+              borderRight: '1px solid rgba(255, 255, 255, 0.08)', // 细腻的边框
+              transition: theme.transitions.create(['width', 'background-color'], {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.standard,
               }),
             },
           }}
         >
-          <Toolbar sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1, minHeight: 0, height: 0 }}>
-          </Toolbar>
-          <Box sx={{ overflow: 'auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <Box className="sidebar-menu" sx={{ flex: 1 }}>
+          {/* 移除了原来的空 Toolbar 占位符，因为现在通过 top: 64px 精确定位了 */}
+          <Box sx={{ overflow: 'auto', display: 'flex', flexDirection: 'column', height: '100%', py: 2 }}>
+            <List className="sidebar-menu" sx={{ flex: 1, padding: 0 }}>
               {['files', 'sync', 'download', 'media', 'share', 'settings'].map((tab) => (
-                <Box
-                  key={tab}
-                  className={`sidebar-item ${activeTab === tab ? 'active' : ''}`}
-                  onClick={() => handleTabChange(tab)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    justifyContent: 'flex-start',
-                    gap: '12px',
-                  }}
-                >
-                  {tab === 'files' && <Folder />}
-                  {tab === 'sync' && <CloudUploadOutlined />}
-                  {tab === 'download' && <Description />}
-                  {tab === 'media' && <PlayCircleFilled />}
-                  {tab === 'share' && <ShareOutlined />}
-                  {tab === 'settings' && <SettingsOutlined />}
-                  {sidebarOpen && (
-                    <Typography className="sidebar-label">
-                      {tab === 'files' && '文件管理'}
-                      {tab === 'sync' && '同步备份'}
-                      {tab === 'download' && '离线下载'}
-                      {tab === 'media' && '影音中心'}
-                      {tab === 'share' && '分享协同'}
-                      {tab === 'settings' && '系统设置'}
-                    </Typography>
-                  )}
-                </Box>
+                <ListItem key={tab} disablePadding sx={{ display: 'block', mb: 0.5 }}>
+                  <ListItemButton
+                    selected={activeTab === tab}
+                    onClick={() => handleTabChange(tab)}
+                    sx={{
+                      minHeight: 48,
+                      justifyContent: sidebarOpen ? 'initial' : 'center',
+                      px: 2.5,
+                      mx: 1, // 左右留白，做成悬浮胶囊效果
+                      borderRadius: 2,
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                         backgroundColor: 'rgba(255,255,255,0.08)'
+                      },
+                      '&.Mui-selected': {
+                        backgroundColor: theme.palette.primary.main + '20', // 半透明的主色
+                        color: theme.palette.primary.main,
+                        border: `1px solid ${theme.palette.primary.main}40`,
+                        '&:hover': {
+                          backgroundColor: theme.palette.primary.main + '30',
+                        },
+                        '& .MuiListItemIcon-root': {
+                          color: theme.palette.primary.main,
+                        },
+                      },
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: sidebarOpen ? 2 : 'auto', // 稍微减小间距
+                        justifyContent: 'center',
+                        color: activeTab === tab ? 'inherit' : 'text.secondary',
+                      }}
+                    >
+                      {tab === 'files' && <Folder />}
+                      {tab === 'sync' && <CloudUploadOutlined />}
+                      {tab === 'download' && <Description />}
+                      {tab === 'media' && <PlayCircleFilled />}
+                      {tab === 'share' && <ShareOutlined />}
+                      {tab === 'settings' && <SettingsOutlined />}
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={
+                        tab === 'files' ? '文件管理' :
+                        tab === 'sync' ? '同步备份' :
+                        tab === 'download' ? '离线下载' :
+                        tab === 'media' ? '影音中心' :
+                        tab === 'share' ? '分享协同' :
+                        '系统设置'
+                      } 
+                      sx={{ opacity: sidebarOpen ? 1 : 0 }} 
+                    />
+                  </ListItemButton>
+                </ListItem>
               ))}
-            </Box>
-            <Box
-              className="sidebar-item"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '12px 16px',
-                justifyContent: 'center',
-                gap: '12px',
-                marginTop: 'auto',
-                flexShrink: 0,
-              }}
-            >
-              {sidebarOpen ? <ChevronLeft /> : <MenuIcon />}
-            </Box>
+            </List>
+            <Divider />
+            <List>
+               <ListItem disablePadding sx={{ display: 'block' }}>
+                  <ListItemButton
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    sx={{
+                      minHeight: 48,
+                      justifyContent: sidebarOpen ? 'initial' : 'center',
+                      px: 2.5,
+                    }}
+                  >
+                     <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: sidebarOpen ? 3 : 'auto',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {sidebarOpen ? <ChevronLeft /> : <ChevronRight />}
+                    </ListItemIcon>
+                    <ListItemText primary="收起" sx={{ opacity: sidebarOpen ? 1 : 0 }} />
+                  </ListItemButton>
+               </ListItem>
+            </List>
           </Box>
         </Drawer>
         <Box component="main" sx={{ flexGrow: 1, width: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>

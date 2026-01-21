@@ -151,16 +151,19 @@ const UploadDialog = () => {
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 2,
+          borderRadius: 4,
+          backgroundColor: 'rgba(30, 30, 30, 0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
         },
       }}
     >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <CloudUploadOutlined />
           <Typography variant="h6">上传文件</Typography>
         </Box>
-        <IconButton onClick={handleClose} disabled={uploading}>
+        <IconButton onClick={handleClose} disabled={uploading} sx={{ color: 'white' }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -170,13 +173,23 @@ const UploadDialog = () => {
           {...getRootProps()}
           className={`upload-dropzone ${isDragActive ? 'active' : ''}`}
           onClick={() => document.getElementById('file-input').click()}
+          sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              border: '2px dashed rgba(255, 255, 255, 0.2)',
+              borderRadius: 3,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  borderColor: 'primary.main',
+              }
+          }}
         >
           <input {...getInputProps()} id="file-input" />
           <CloudUploadOutlined sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
             {isDragActive ? '释放文件以上传' : '拖拽文件到此处，或点击选择文件'}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
             支持分片上传、秒传、断点续传
           </Typography>
         </Box>
@@ -184,35 +197,37 @@ const UploadDialog = () => {
         {files.length > 0 && (
           <Box sx={{ mt: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="subtitle2">
+              <Typography variant="subtitle2" sx={{ color: 'white' }}>
                 已选择 {files.length} 个文件
               </Typography>
               <Button
                 size="small"
                 onClick={() => setFiles([])}
                 disabled={uploading}
+                sx={{ color: 'rgba(255, 255, 255, 0.6)', '&:hover': { color: 'white' } }}
               >
                 清空列表
               </Button>
             </Box>
             <List className="upload-file-list">
               {files.map((fileItem) => (
-                <ListItem key={fileItem.id} className="upload-file-item">
+                <ListItem key={fileItem.id} className="upload-file-item" sx={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
                   <ListItemIcon>
                     {fileItem.file.type?.startsWith('image/') ? (
                       <InsertDriveFile sx={{ color: 'primary.main' }} />
                     ) : (
-                      <InsertDriveFile />
+                      <InsertDriveFile sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
                     )}
                   </ListItemIcon>
                   <ListItemText
-                    primary={fileItem.file.name}
-                    secondary={formatFileSize(fileItem.file.size)}
+                    primary={<Typography sx={{ color: 'white' }}>{fileItem.file.name}</Typography>}
+                    secondary={<Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>{formatFileSize(fileItem.file.size)}</Typography>}
                   />
                   <IconButton
                     edge="end"
                     onClick={() => handleRemoveFile(fileItem.id)}
                     disabled={uploading}
+                    sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: 'error.main' } }}
                   >
                     <DeleteOutline />
                   </IconButton>
@@ -224,7 +239,7 @@ const UploadDialog = () => {
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={handleClose} disabled={uploading}>
+        <Button onClick={handleClose} disabled={uploading} sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
           取消
         </Button>
         <Button

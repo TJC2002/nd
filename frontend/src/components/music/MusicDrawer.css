@@ -1,0 +1,72 @@
+.music-drawer-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+}
+
+.music-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 16px;
+}
+
+.music-cover-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.music-cover {
+  width: 200px;
+  height: 200px;
+  border-radius: 20px;
+  object-fit: cover;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.music-cover.playing {
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.music-controls-section {
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.music-playlist-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Important for flex child scrolling */
+}
+
+/* Playing Indicator Animation */
+.playing-indicator {
+  display: flex;
+  align-items: flex-end;
+  height: 12px;
+  gap: 2px;
+}
+
+.bar {
+  width: 3px;
+  background-color: currentColor;
+  animation: equalize 1s infinite;
+}
+
+.bar.n1 { animation-delay: 0.1s; }
+.bar.n2 { animation-delay: 0.3s; }
+.bar.n3 { animation-delay: 0.6s; }
+
+@keyframes equalize {
+  0% { height: 2px; }
+  50% { height: 12px; }
+  100% { height: 2px; }
+}

@@ -4,11 +4,14 @@ import { ThemeProvider as MuiThemeProvider, CssBaseline, Snackbar, Alert } from 
 import Login from './pages/login/Login'
 import Home from './pages/home/Home'
 import NotFound from './pages/NotFound'
+import MusicPage from './pages/music/MusicPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import MusicDrawer from './components/music/MusicDrawer'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider as CustomThemeProvider } from './context/ThemeContext'
 import { NotificationProvider, useNotification } from './context/NotificationContext'
 import { UploadProvider } from './context/UploadContext'
+import { MusicProvider } from './context/MusicContext'
 
 function App() {
   return (
@@ -20,23 +23,34 @@ function App() {
               {(themeContext) => (
                 <MuiThemeProvider theme={themeContext.theme}>
                   <CssBaseline />
-                  <BrowserRouter>
-                    <Routes>
-                      <Route path="/login" element={<Login />} />
-                      <Route 
-                        path="/" 
-                        element={
-                          <ProtectedRoute>
-                            <UploadProvider>
-                              <Home />
-                            </UploadProvider>
-                          </ProtectedRoute>
-                        } 
-                      />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </BrowserRouter>
-                  <GlobalNotification notificationContext={notificationContext} />
+                  <MusicProvider>
+                    <BrowserRouter>
+                      <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route 
+                          path="/" 
+                          element={
+                            <ProtectedRoute>
+                              <UploadProvider>
+                                <Home />
+                                <MusicDrawer />
+                              </UploadProvider>
+                            </ProtectedRoute>
+                          } 
+                        />
+                        <Route 
+                          path="/music" 
+                          element={
+                            <ProtectedRoute>
+                              <MusicPage />
+                            </ProtectedRoute>
+                          } 
+                        />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </BrowserRouter>
+                    <GlobalNotification notificationContext={notificationContext} />
+                  </MusicProvider>
                 </MuiThemeProvider>
               )}
             </CustomThemeProvider>

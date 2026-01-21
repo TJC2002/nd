@@ -15,6 +15,7 @@ import {
   Checkbox,
   Snackbar,
   Alert,
+  InputAdornment,
   Tabs,
   Tab,
 } from '@mui/material'
@@ -165,23 +166,57 @@ const Login = () => {
       className={`login-container ${effectiveMode}`}
     >
       <Container maxWidth="lg" className="login-content">
-        <Box className="login-wrapper">
-          <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-            <ThemeSwitcher />
-          </Box>
-          <Box className="logo-section">
-            <Typography variant="h2" className="logo-text">
-              ND
-            </Typography>
-            <Typography variant="h6" className="logo-subtitle">
-              ND网盘
-            </Typography>
-          </Box>
+          <Box className="login-wrapper">
+            <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+              <ThemeSwitcher />
+            </Box>
+            <Box className="logo-section" sx={{ mb: 4 }}>
+              <Typography 
+                variant="h2" 
+                component="div"
+                sx={{ 
+                  fontFamily: '"Orbitron", "Roboto", sans-serif',
+                  fontWeight: 900,
+                  letterSpacing: '4px',
+                  background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: (theme) => '0 0 30px ' + theme.palette.primary.dark,
+                  mb: 1
+                }}
+              >
+                ND DRIVE
+              </Typography>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: 'text.secondary',
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  fontSize: '0.9rem',
+                  opacity: 0.8
+                }}
+              >
+                Personal Cloud Storage
+              </Typography>
+            </Box>
 
-          <Paper className="login-form-section" elevation={3}>
-            <Tabs
-              value={activeTab}
-              onChange={(e, newValue) => {
+            <Paper 
+              elevation={24}
+              sx={{
+                width: '100%',
+                maxWidth: 450,
+                p: 4,
+                borderRadius: 4,
+                backdropFilter: 'blur(20px)',
+                backgroundColor: 'rgba(30, 30, 30, 0.4)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: (theme) => `0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px ${theme.palette.primary.main}20`
+              }}
+            >
+              <Tabs
+                value={activeTab}
+                onChange={(e, newValue) => {
                 setActiveTab(newValue)
                 setError('')
                 setFormData({
@@ -199,46 +234,78 @@ const Login = () => {
               <Tab label="注册" />
             </Tabs>
 
-            {activeTab === 0 ? (
-              <Box component="form" onSubmit={handleLogin} className="login-form">
-                <Box className="form-group">
-                  <TextField
-                    fullWidth
-                    label="账号"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    error={!!error}
-                    helperText={error}
-                    InputProps={{
-                      startAdornment: <EmailOutlined />,
-                    }}
-                  />
-                </Box>
+              {activeTab === 0 ? (
+                <Box component="form" onSubmit={handleLogin} className="login-form">
+                  <Box className="form-group">
+                    <TextField
+                      fullWidth
+                      label="账号"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      error={!!error}
+                      helperText={error}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          '&:hover': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          },
+                          '&.Mui-focused': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          }
+                        }
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                              <EmailOutlined sx={{ color: 'text.secondary' }} />
+                          </InputAdornment>
+                        )
+                      }}
+                    />
+                  </Box>
 
-                <Box className="form-group">
-                  <TextField
-                    fullWidth
-                    label="密码"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    InputProps={{
-                      startAdornment: <LockOutlined />,
-                      endAdornment: (
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                        >
-                          {showPassword ? <Visibility /> : <VisibilityOff />}
-                        </IconButton>
-                      ),
-                    }}
-                  />
-                </Box>
+                  <Box className="form-group">
+                    <TextField
+                      fullWidth
+                      label="密码"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          '&:hover': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          },
+                          '&.Mui-focused': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          }
+                        }
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                              <LockOutlined sx={{ color: 'text.secondary' }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                            >
+                              {showPassword ? <Visibility /> : <VisibilityOff />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Box>
 
-                <Box className="form-options">
+                  <Box className="form-options">
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -266,90 +333,154 @@ const Login = () => {
                   {loading ? <CircularProgress size={24} color="inherit" /> : '登录'}
                 </Button>
               </Box>
-            ) : (
-              <Box component="form" onSubmit={handleRegister} className="login-form">
-                <Box className="form-group">
-                  <TextField
-                    fullWidth
-                    label="账号"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    error={!!error}
-                    helperText={error}
-                    InputProps={{
-                      startAdornment: <PersonAddOutlined />,
-                    }}
-                  />
-                </Box>
+              ) : (
+                <Box component="form" onSubmit={handleRegister} className="login-form">
+                  <Box className="form-group">
+                    <TextField
+                      fullWidth
+                      label="账号"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      error={!!error}
+                      helperText={error}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          '&:hover': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          },
+                          '&.Mui-focused': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          }
+                        }
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <PersonAddOutlined sx={{ color: 'text.secondary' }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Box>
 
-                <Box className="form-group">
-                  <TextField
-                    fullWidth
-                    label="邮箱"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    InputProps={{
-                      startAdornment: <EmailOutlined />,
-                    }}
-                  />
-                </Box>
+                  <Box className="form-group">
+                    <TextField
+                      fullWidth
+                      label="邮箱"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          '&:hover': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          },
+                          '&.Mui-focused': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          }
+                        }
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <EmailOutlined sx={{ color: 'text.secondary' }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Box>
 
-                <Box className="form-group">
-                  <TextField
-                    fullWidth
-                    label="密码"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    InputProps={{
-                      startAdornment: <LockOutlined />,
-                      endAdornment: (
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                        >
-                          {showPassword ? <Visibility /> : <VisibilityOff />}
-                        </IconButton>
-                      ),
-                    }}
-                  />
-                </Box>
+                  <Box className="form-group">
+                    <TextField
+                      fullWidth
+                      label="密码"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          '&:hover': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          },
+                          '&.Mui-focused': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          }
+                        }
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockOutlined sx={{ color: 'text.secondary' }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                            >
+                              {showPassword ? <Visibility /> : <VisibilityOff />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Box>
 
-                <Box className="form-group">
-                  <TextField
-                    fullWidth
-                    label="确认密码"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    InputProps={{
-                      startAdornment: <LockOutlined />,
-                      endAdornment: (
-                        <IconButton
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          edge="end"
-                        >
-                          {showConfirmPassword ? <Visibility /> : <VisibilityOff />}
-                        </IconButton>
-                      ),
-                    }}
-                  />
-                </Box>
+                  <Box className="form-group">
+                    <TextField
+                      fullWidth
+                      label="确认密码"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          '&:hover': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          },
+                          '&.Mui-focused': {
+                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          }
+                        }
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockOutlined sx={{ color: 'text.secondary' }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              edge="end"
+                            >
+                              {showConfirmPassword ? <Visibility /> : <VisibilityOff />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Box>
 
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  className="login-button"
-                  disabled={loading}
-                >
-                  {loading ? <CircularProgress size={24} color="inherit" /> : '注册'}
-                </Button>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    className="login-button"
+                    disabled={loading}
+                  >
+                    {loading ? <CircularProgress size={24} color="inherit" /> : '注册'}
+                  </Button>
               </Box>
             )}
           </Paper>

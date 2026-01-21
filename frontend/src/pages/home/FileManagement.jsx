@@ -11,11 +11,6 @@ import {
   Avatar,
   Tooltip,
   Grid,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListItemSecondaryAction,
   Paper,
   LinearProgress,
   Dialog,
@@ -25,13 +20,20 @@ import {
   Snackbar,
   Alert,
   Card,
-  CardHeader,
+  CardActionArea,
   CardContent,
-  CardActions,
   Checkbox,
-  CardMedia,
   Breadcrumbs,
   Link,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Menu,
+  MenuItem,
+  Fade
 } from '@mui/material'
 import {
   Folder,
@@ -39,581 +41,558 @@ import {
   Description,
   PlayCircleFilled,
   ShareOutlined,
-  SearchOutlined,
-  Visibility,
-  VisibilityOff,
-  MoreVertOutlined,
+  Search,
+  MoreVert,
   DeleteOutline,
-  StarOutline,
-  StarBorderOutlined,
-  ViewList,
-  GridViewOutlined,
+  GridViewRounded,
+  TableRowsRounded,
   FavoriteBorder,
-  Favorite,
+  NavigateNext,
+  Home,
+  Sort,
+  CheckCircle,
+  CreateNewFolderOutlined,
+  Image as ImageIcon,
+  AudioFile,
+  InsertDriveFile
 } from '@mui/icons-material'
-import { fileApi, storageApi } from '../../services/api'
+import { fileApi } from '../../services/api'
 import { useUpload } from '../../context/UploadContext'
-import './FileManagement.css'
+import './FileManagement.css' // Ensure this file exists or styles are inline
+
+// --- Helper Components & Styles ---
+
+const GlassCard = ({ children, sx, ...props }) => (
+  <Paper
+    elevation={0}
+    sx={{
+      background: 'rgba(30, 30, 30, 0.6)',
+      backdropFilter: 'blur(12px)',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      borderRadius: 4,
+      overflow: 'hidden',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      ...sx
+    }}
+    {...props}
+  >
+    {children}
+  </Paper>
+)
 
 const FileManagement = () => {
-  const location = useLocation()
+  // --- State & Hooks ---
   const navigate = useNavigate()
-  const { setDialogOpen, setCurrentFolder } = useUpload()
   const [searchParams] = useSearchParams()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState('grid')
-  const [selectedFiles, setSelectedFiles] = useState(new Set())
-  const [sortBy, setSortBy] = useState('name')
-  const [createFolderDialog, setCreateFolderDialog] = useState(false)
-  const [folderName, setFolderName] = useState('')
+  const { setDialogOpen, setCurrentFolder } = useUpload()
+
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
   const [currentFolderId, setCurrentFolderId] = useState(null)
   const [breadcrumbPath, setBreadcrumbPath] = useState([])
+  const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
+  const [selectedFiles, setSelectedFiles] = useState(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState('name') // 'name' | 'date' | 'size'
+  
+  // Dialogs
+  const [createFolderDialog, setCreateFolderDialog] = useState(false)
+  const [folderName, setFolderName] = useState('')
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+  
+  // Menus
+  const [anchorElSort, setAnchorElSort] = useState(null)
+
+  // --- Effects ---
 
   useEffect(() => {
     const folderId = searchParams.get('folderId')
-    console.log('folderId from URL:', folderId)
-    if (folderId) {
-      setCurrentFolderId(parseInt(folderId))
-    } else {
-      setCurrentFolderId(null)
-    }
+    setCurrentFolderId(folderId ? parseInt(folderId) : null)
   }, [searchParams])
 
   useEffect(() => {
-    console.log('currentFolderId changed:', currentFolderId)
     loadFiles()
     updateBreadcrumbPath()
+    setSelectedFiles(new Set()) // Clear selection on folder change
   }, [currentFolderId])
 
-  const updateBreadcrumbPath = async () => {
-    if (!currentFolderId) {
-      setBreadcrumbPath([])
-      return
-    }
-
-    try {
-      const response = await fileApi.getFolderPath(currentFolderId)
-      if (response.code === 200 && response.data) {
-        setBreadcrumbPath(response.data)
-      }
-    } catch (error) {
-      console.error('获取文件夹路径失败:', error)
-    }
-  }
+  // --- API Calls ---
 
   const loadFiles = async () => {
     try {
       setLoading(true)
-      console.log('Loading files for folderId:', currentFolderId)
       const response = await fileApi.getFiles(currentFolderId)
-      console.log('API response:', response)
       if (response.code === 200 && response.data) {
-        console.log('Setting files:', response.data)
         setFiles(response.data)
       }
     } catch (error) {
-      console.error('加载文件失败:', error)
+      console.error('Failed to load files:', error)
       showSnackbar('加载文件失败', 'error')
     } finally {
       setLoading(false)
     }
   }
 
+  const updateBreadcrumbPath = async () => {
+    if (!currentFolderId) {
+      setBreadcrumbPath([])
+      return
+    }
+    try {
+      const response = await fileApi.getFolderPath(currentFolderId)
+      if (response.code === 200 && response.data) {
+        setBreadcrumbPath(response.data)
+      }
+    } catch (error) {
+      console.error('Failed to load path:', error)
+    }
+  }
+
+  const handleCreateFolder = async () => {
+    if (!folderName.trim()) return
+    try {
+      const response = await fileApi.createFolder(folderName.trim(), currentFolderId)
+      if (response.code === 200) {
+        showSnackbar('文件夹创建成功')
+        setCreateFolderDialog(false)
+        setFolderName('')
+        loadFiles()
+      } else {
+        showSnackbar(response.message || '创建失败', 'error')
+      }
+    } catch (error) {
+      showSnackbar('创建文件夹失败', 'error')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (selectedFiles.size === 0) return
+    // Simple confirmation - in a real app, use a Dialog
+    if (!window.confirm(`确定要删除选中的 ${selectedFiles.size} 个项目吗?`)) return
+
+    try {
+      let successCount = 0
+      for (const id of selectedFiles) {
+        await fileApi.deleteFile(id)
+        successCount++
+      }
+      showSnackbar(`成功删除 ${successCount} 个项目`)
+      setSelectedFiles(new Set())
+      loadFiles()
+    } catch (error) {
+      showSnackbar('部分文件删除失败', 'error')
+    }
+  }
+
+  // --- Event Handlers ---
+
+  const handleFileClick = (file) => {
+    if (file.isFolder) {
+      navigate(`?folderId=${file.id}`)
+    } else {
+      // Toggle selection for non-folders in this simplified logic, 
+      // or implement preview logic here
+      toggleSelection(file.id)
+    }
+  }
+
+  const toggleSelection = (id) => {
+    setSelectedFiles(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) newSet.delete(id)
+      else newSet.add(id)
+      return newSet
+    })
+  }
+
+  const selectAll = () => {
+    if (selectedFiles.size === files.length) setSelectedFiles(new Set())
+    else setSelectedFiles(new Set(files.map(f => f.id)))
+  }
+
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity })
   }
 
-  const handleSnackbarClose = () => {
-    setSnackbar({ ...snackbar, open: false })
+  // --- Render Helpers ---
+
+  const getFileIcon = (file) => {
+    if (file.isFolder) return <Folder sx={{ fontSize: 48, color: '#FFD700' }} /> // Gold folder
+    
+    // Cyberpunk/Neon colors for file types
+    const mime = file.mimeType || ''
+    if (mime.includes('image')) return <ImageIcon sx={{ fontSize: 40, color: '#00fff5' }} /> // Cyan
+    if (mime.includes('audio')) return <AudioFile sx={{ fontSize: 40, color: '#ff00ff' }} /> // Magenta
+    if (mime.includes('video')) return <PlayCircleFilled sx={{ fontSize: 40, color: '#bc13fe' }} /> // Purple
+    if (mime.includes('pdf')) return <Description sx={{ fontSize: 40, color: '#ff4d4d' }} /> // Red
+    return <InsertDriveFile sx={{ fontSize: 40, color: '#7df9ff' }} /> // Electric Blue
   }
 
-  const handleSearch = (event) => {
-    setSearchQuery(event.target.value)
-  }
-
-  const handleFileClick = (file) => {
-    if (selectedFiles.has(file.id)) {
-      setSelectedFiles(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(file.id)
-        return newSet
-      })
-    } else {
-      setSelectedFiles(prev => new Set(prev).add(file.id))
-    }
-  }
-
-  const handleSelectAll = () => {
-    if (selectedFiles.size === files.length) {
-      setSelectedFiles(new Set())
-    } else {
-      setSelectedFiles(new Set(files.map(f => f.id)))
-    }
-  }
-
-  const handleUpload = () => {
-    setCurrentFolder(currentFolderId)
-    setDialogOpen(true)
-  }
-
-  const handleCreateFolder = () => {
-    setCreateFolderDialog(true)
-    setFolderName('')
-  }
-
-  const handleCreateFolderConfirm = async () => {
-    if (folderName.trim()) {
-      try {
-        const response = await fileApi.createFolder(folderName.trim(), currentFolderId)
-        if (response.code === 200) {
-          showSnackbar('文件夹创建成功')
-          setCreateFolderDialog(false)
-          setFolderName('')
-          loadFiles()
-        } else {
-          showSnackbar(response.message || '创建失败', 'error')
-        }
-      } catch (error) {
-        console.error('创建文件夹失败:', error)
-        showSnackbar('创建文件夹失败', 'error')
-      }
-    }
-  }
-
-  const handleFolderClick = (file) => {
-    if (file.isFolder) {
-      const params = new URLSearchParams(searchParams)
-      params.set('folderId', file.id)
-      navigate(`?${params.toString()}`)
-    }
-  }
-
-  const handleBack = () => {
-    navigate('/')
-  }
-
-  const handleCreateFolderCancel = () => {
-    setCreateFolderDialog(false)
-    setFolderName('')
-  }
-
-  const handleDelete = async (fileId) => {
-    try {
-      const response = await fileApi.deleteFile(fileId)
-      if (response.code === 200) {
-        showSnackbar('删除成功')
-        setSelectedFiles(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(fileId)
-          return newSet
-        })
-        loadFiles()
-      } else {
-        showSnackbar(response.message || '删除失败', 'error')
-      }
-    } catch (error) {
-      console.error('删除文件失败:', error)
-      showSnackbar('删除文件失败', 'error')
-    }
-  }
-
-  const handleToggleFavorite = (fileId) => {
-    console.log('切换收藏:', fileId)
-  }
-
-  const handleSort = (field) => {
-    setSortBy(field)
-  }
-
-  const getFileIcon = (isFolder, mimeType) => {
-    if (isFolder) {
-      return <Folder />
-    }
-    const iconMap = {
-      'application/pdf': <Description />,
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': <Description />,
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': <Description />,
-      'image/jpeg': <Description />,
-      'image/png': <Description />,
-      'video/mp4': <PlayCircleFilled />,
-      'application/zip': <Description />,
-    }
-    return iconMap[mimeType] || <Description />
-  }
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 B'
+  const formatSize = (bytes) => {
+    if (!bytes && bytes !== 0) return '--'
     const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const sizes = ['B', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  const formatDate = (dateString) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    const now = new Date()
-    const diff = now - date
-    const seconds = Math.floor(diff / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
+  const filteredFiles = files
+    .filter(f => f.fileName.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      // Always put folders first
+      if (a.isFolder && !b.isFolder) return -1
+      if (!a.isFolder && b.isFolder) return 1
+      
+      if (sortBy === 'name') return a.fileName.localeCompare(b.fileName)
+      if (sortBy === 'size') return (a.fileSize || 0) - (b.fileSize || 0)
+      if (sortBy === 'date') return new Date(b.createdAt) - new Date(a.createdAt)
+      return 0
+    })
 
-    if (seconds < 60) return '刚刚'
-    if (minutes < 60) return `${minutes} 分钟前`
-    if (hours < 24) return `${hours} 小时前`
-    if (days < 7) return `${days} 天前`
-    if (days < 30) return `${Math.floor(days / 7)} 周前`
-    if (days < 365) return `${Math.floor(days / 30)} 月前`
-    return `${Math.floor(days / 365)} 年前`
-  }
-
-  const filteredFiles = files.filter(file =>
-    file.fileName && file.fileName.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const sortedFiles = [...filteredFiles].sort((a, b) => {
-    if (sortBy === 'name') {
-      return a.fileName.localeCompare(b.fileName)
-    } else if (sortBy === 'date') {
-      return new Date(b.createdAt) - new Date(a.createdAt)
-    } else if (sortBy === 'size') {
-      return parseFloat(a.fileSize) - parseFloat(b.fileSize)
-    }
-    return 0
-  })
+  // --- Render ---
 
   return (
-    <Box className="file-management">
-      {loading && (
-        <Box className="loading-container">
-          <LinearProgress />
-        </Box>
-      )}
-      <Box className="top-bar">
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {currentFolderId && (
-            <IconButton onClick={handleBack}>
-              <Folder />
-            </IconButton>
-          )}
-          <Breadcrumbs aria-label="breadcrumb" sx={{ flexGrow: 1 }}>
-            <Link color="inherit" href="/" onClick={(e) => { e.preventDefault(); navigate('/') }}>
-              全部文件
+    <Box sx={{ p: { xs: 2, md: 3 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      
+      {/* --- HEADER SECTION --- */}
+      <Box sx={{ mb: 4 }}>
+        {/* Row 1: Breadcrumbs & Search */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+          <Breadcrumbs 
+            separator={<NavigateNext fontSize="small" sx={{ color: 'rgba(255,255,255,0.3)' }} />}
+            sx={{ '& .MuiBreadcrumbs-ol': { alignItems: 'center' } }}
+          >
+            <Link
+              underline="hover"
+              color={!currentFolderId ? "primary" : "inherit"}
+              onClick={() => navigate('/')}
+              sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', color: !currentFolderId ? '#00e5ff' : 'rgba(255,255,255,0.7)' }}
+            >
+              <Home sx={{ mr: 0.5 }} fontSize="inherit" />
+              Root
             </Link>
-            {breadcrumbPath.map((folder, index) => (
-              <Link
-                key={folder.id}
-                color="inherit"
-                href={`?folderId=${folder.id}`}
-                onClick={(e) => {
-                  e.preventDefault()
-                  navigate(`?folderId=${folder.id}`)
-                }}
-              >
-                {folder.fileName}
-              </Link>
-            ))}
+            {breadcrumbPath.map((folder, index) => {
+                const isLast = index === breadcrumbPath.length - 1
+                return (
+                    <Link
+                        key={folder.id}
+                        underline="hover"
+                        color={isLast ? "primary" : "inherit"}
+                        onClick={() => navigate(`?folderId=${folder.id}`)}
+                        sx={{ 
+                            cursor: 'pointer', 
+                            color: isLast ? '#00e5ff' : 'rgba(255,255,255,0.7)',
+                            fontWeight: isLast ? 'bold' : 'normal',
+                            textShadow: isLast ? '0 0 10px rgba(0,229,255,0.5)' : 'none'
+                        }}
+                    >
+                        {folder.fileName}
+                    </Link>
+                )
+            })}
           </Breadcrumbs>
         </Box>
-        <Box className="top-bar-left">
-          <Button
-            variant="outlined"
-            startIcon={<Folder />}
-            onClick={handleCreateFolder}
-          >
-            新建文件夹
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<CloudUploadOutlined />}
-            onClick={handleUpload}
-          >
-            上传文件
-          </Button>
-          {selectedFiles.size > 0 && (
-            <>
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteOutline />}
-                onClick={() => handleDelete([...selectedFiles][0])}
-              >
-                删除 ({selectedFiles.size})
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<ShareOutlined />}
-              >
-                分享 ({selectedFiles.size})
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<Favorite />}
-                onClick={() => handleToggleFavorite([...selectedFiles][0]?.id)}
-              >
-                收藏 ({selectedFiles.size})
-              </Button>
-            </>
-          )}
-        </Box>
-        <Box className="top-bar-right">
-          <Box sx={{ display: 'flex', gap: '4px', mr: 2 }}>
-            <Tooltip title="网格视图">
-              <IconButton
-                color={viewMode === 'grid' ? 'primary' : 'default'}
-                onClick={() => setViewMode('grid')}
-              >
-                <GridViewOutlined />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="列表视图">
-              <IconButton
-                color={viewMode === 'list' ? 'primary' : 'default'}
-                onClick={() => setViewMode('list')}
-              >
-                <ViewList />
-              </IconButton>
-            </Tooltip>
+
+        {/* Row 2: Actions & Tools */}
+        <GlassCard sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={<CloudUploadOutlined />}
+              onClick={() => { setCurrentFolder(currentFolderId); setDialogOpen(true); }}
+              sx={{
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                color: 'white',
+                borderRadius: 2,
+                px: 3,
+                textTransform: 'none',
+                fontWeight: 'bold'
+              }}
+            >
+              Upload
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<CreateNewFolderOutlined />}
+              onClick={() => setCreateFolderDialog(true)}
+              sx={{
+                borderColor: 'rgba(255,255,255,0.3)',
+                color: 'white',
+                borderRadius: 2,
+                textTransform: 'none',
+                '&:hover': { borderColor: '#00e5ff', color: '#00e5ff', bgcolor: 'rgba(0,229,255,0.05)' }
+              }}
+            >
+              New Folder
+            </Button>
+
+            {selectedFiles.size > 0 && (
+                <Fade in={selectedFiles.size > 0}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                            variant="outlined"
+                            color="error"
+                            startIcon={<DeleteOutline />}
+                            onClick={handleDelete}
+                            sx={{ borderRadius: 2, textTransform: 'none', whiteSpace: 'nowrap', minWidth: 'fit-content' }}
+                        >
+                            Delete ({selectedFiles.size})
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            startIcon={<ShareOutlined />}
+                            sx={{ borderRadius: 2, textTransform: 'none', color: 'rgba(255,255,255,0.7)', borderColor: 'rgba(255,255,255,0.2)' }}
+                        >
+                            Share
+                        </Button>
+                    </Box>
+                </Fade>
+            )}
           </Box>
-          <IconButton>
-            <SearchOutlined />
-          </IconButton>
-          <Chip
-            label={`已选 ${selectedFiles.size}`}
-            color="primary"
-            variant="outlined"
-            onClick={handleSelectAll}
-          />
-        </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton onClick={(e) => setAnchorElSort(e.currentTarget)}>
+                <Sort sx={{ color: 'white' }} />
+            </IconButton>
+            <Menu
+                anchorEl={anchorElSort}
+                open={Boolean(anchorElSort)}
+                onClose={() => setAnchorElSort(null)}
+                PaperProps={{
+                    sx: { bgcolor: '#1e1e1e', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }
+                }}
+            >
+                <MenuItem onClick={() => { setSortBy('name'); setAnchorElSort(null); }}>Name</MenuItem>
+                <MenuItem onClick={() => { setSortBy('date'); setAnchorElSort(null); }}>Date</MenuItem>
+                <MenuItem onClick={() => { setSortBy('size'); setAnchorElSort(null); }}>Size</MenuItem>
+            </Menu>
+
+            <Box sx={{ bgcolor: 'rgba(0,0,0,0.3)', borderRadius: 2, p: 0.5, display: 'flex' }}>
+                <IconButton 
+                    size="small" 
+                    onClick={() => setViewMode('grid')}
+                    sx={{ 
+                        color: viewMode === 'grid' ? '#00e5ff' : 'rgba(255,255,255,0.3)',
+                        bgcolor: viewMode === 'grid' ? 'rgba(0,229,255,0.1)' : 'transparent',
+                        borderRadius: 1.5
+                    }}
+                >
+                    <GridViewRounded fontSize="small" />
+                </IconButton>
+                <IconButton 
+                    size="small" 
+                    onClick={() => setViewMode('list')}
+                    sx={{ 
+                        color: viewMode === 'list' ? '#00e5ff' : 'rgba(255,255,255,0.3)',
+                        bgcolor: viewMode === 'list' ? 'rgba(0,229,255,0.1)' : 'transparent',
+                        borderRadius: 1.5
+                    }}
+                >
+                    <TableRowsRounded fontSize="small" />
+                </IconButton>
+            </Box>
+          </Box>
+        </GlassCard>
       </Box>
 
-      <Box className="content-area">
-        {files.length === 0 ? (
-          <Box className="empty-state">
-            <Folder sx={{ fontSize: 64, color: 'text.secondary' }} />
-            <Typography variant="h6">暂无文件</Typography>
-          </Box>
+      {/* --- CONTENT SECTION --- */}
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
+        {loading && <LinearProgress sx={{ bgcolor: 'rgba(255,255,255,0.05)', '& .MuiLinearProgress-bar': { bgcolor: '#00e5ff' } }} />}
+        
+        {files.length === 0 && !loading ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 10, opacity: 0.5 }}>
+                <Folder sx={{ fontSize: 80, color: 'rgba(255,255,255,0.1)' }} />
+                <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>This folder is empty</Typography>
+            </Box>
         ) : (
-          <>
-            {viewMode === 'grid' ? (
-              <Grid container spacing={2} className="file-grid" sx={{ margin: 0, width: '100%' }}>
-                {sortedFiles.map((file) => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={file.id}>
-                    <Card
-                      className={`file-card ${selectedFiles.has(file.id) ? 'selected' : ''}`}
-                      elevation={0}
-                      sx={{ 
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                      }}
-                    >
-                      <CardHeader
-                        avatar={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Checkbox
-                              checked={selectedFiles.has(file.id)}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                handleFileClick(file)
-                              }}
-                              size="small"
-                            />
-                            <Avatar 
-                              sx={{ bgcolor: file.isFolder ? 'primary.main' : 'secondary.main', cursor: file.isFolder ? 'pointer' : 'default' }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                if (file.isFolder) {
-                                  handleFolderClick(file)
-                                }
-                              }}
-                            >
-                              {getFileIcon(file.isFolder, file.mimeType)}
-                            </Avatar>
-                          </Box>
-                        }
-                        title={file.fileName}
-                        subheader={formatFileSize(file.fileSize)}
-                        titleTypographyProps={{
-                          sx: { color: 'text.primary' }
-                        }}
-                        subheaderTypographyProps={{
-                          sx: { color: 'text.secondary' }
-                        }}
-                        action={
-                          <IconButton size="small" onClick={(e) => e.stopPropagation()}>
-                            <MoreVertOutlined />
-                          </IconButton>
-                        }
-                      />
-                      <CardContent sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', pt: 0 }}>
-                        {!file.isFolder ? (
-                          <Box sx={{ width: '100%', height: 150, position: 'relative', overflow: 'hidden', borderRadius: 1, cursor: 'pointer' }}>
-                            <img 
-                              src={`http://localhost:8080/files/${file.id}/cover`} 
-                              alt={file.fileName}
-                              style={{ 
-                                width: '100%', 
-                                height: '100%', 
-                                objectFit: 'cover',
-                                backgroundColor: '#f5f5f5'
-                              }}
-                              onError={(e) => {
-                                e.target.style.display = 'none'
-                                e.target.nextElementSibling.style.display = 'flex'
-                              }}
-                            />
-                            <Box 
-                              style={{ 
-                                display: 'none',
-                                width: '100%', 
-                                height: '100%', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                backgroundColor: '#f5f5f5'
-                              }}
-                            >
-                              {getFileIcon(file.isFolder, file.mimeType)}
-                            </Box>
-                          </Box>
-                        ) : (
-                          <Box 
-                            sx={{ fontSize: 64, color: 'text.secondary', cursor: file.isFolder ? 'pointer' : 'default' }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (file.isFolder) {
-                                handleFolderClick(file)
-                              }
-                            }}
-                          >
-                            {getFileIcon(file.isFolder, file.mimeType)}
-                          </Box>
-                        )}
-                      </CardContent>
-                      <CardActions disableSpacing>
-                        <IconButton aria-label="收藏" size="small">
-                          <FavoriteBorder />
-                        </IconButton>
-                        <IconButton aria-label="分享" size="small">
-                          <ShareOutlined />
-                        </IconButton>
-                      </CardActions>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <Box className="file-list-container">
-                <Box className="file-list-header">
-                  <Box sx={{ flex: 0.5 }}></Box>
-                  <Typography variant="body2" sx={{ flex: 3, fontWeight: 'bold', fontSize: '0.875rem' }}>名称</Typography>
-                  <Typography variant="body2" sx={{ flex: 2, fontWeight: 'bold', fontSize: '0.875rem' }}>大小</Typography>
-                  <Typography variant="body2" sx={{ flex: 2, fontWeight: 'bold', fontSize: '0.875rem' }}>修改日期</Typography>
-                  <Typography variant="body2" sx={{ flex: 1, fontWeight: 'bold', fontSize: '0.875rem' }}>操作</Typography>
-                </Box>
-                <List className="file-list">
-                  {sortedFiles.map((file) => (
-                    <ListItem
-                      key={file.id}
-                      className={`file-item ${selectedFiles.has(file.id) ? 'selected' : ''}`}
-                      onClick={(e) => {
-                        if (!file.isFolder) {
-                          handleFileClick(file)
-                        }
-                      }}
-                      sx={{ display: 'flex', alignItems: 'center', py: 0.5 }}
-                    >
-                      <Box sx={{ flex: 0.5 }}>
-                        <Checkbox
-                          checked={selectedFiles.has(file.id)}
-                          onChange={(e) => {
-                            e.stopPropagation()
-                            handleFileClick(file)
-                          }}
-                          size="small"
-                        />
-                      </Box>
-                      <Box sx={{ flex: 3, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box 
-                          sx={{ fontSize: 32, color: 'text.secondary', cursor: file.isFolder ? 'pointer' : 'default' }}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (file.isFolder) {
-                              handleFolderClick(file)
-                            }
-                          }}
-                        >
-                          {getFileIcon(file.isFolder, file.mimeType)}
-                        </Box>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ fontSize: '0.875rem', cursor: file.isFolder ? 'pointer' : 'default' }}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (file.isFolder) {
-                              handleFolderClick(file)
-                            }
-                          }}
-                        >
-                          {file.fileName}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" sx={{ flex: 2, fontSize: '0.875rem' }}>{formatFileSize(file.fileSize)}</Typography>
-                      <Typography variant="body2" sx={{ flex: 2, fontSize: '0.875rem' }}>{formatDate(file.createdAt)}</Typography>
-                      <Box sx={{ flex: 1, display: 'flex', gap: 0.5 }}>
-                        <IconButton edge="end" size="small" sx={{ padding: '4px' }}>
-                          <FavoriteBorder sx={{ fontSize: '1.25rem' }} />
-                        </IconButton>
-                        <IconButton edge="end" size="small" sx={{ padding: '4px' }}>
-                          <ShareOutlined sx={{ fontSize: '1.25rem' }} />
-                        </IconButton>
-                        <IconButton edge="end" size="small" sx={{ padding: '4px' }}>
-                          <MoreVertOutlined sx={{ fontSize: '1.25rem' }} />
-                        </IconButton>
-                      </Box>
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-            )}
-          </>
+            <>
+                {viewMode === 'grid' ? (
+                    <Grid container spacing={2}>
+                        {filteredFiles.map((file) => {
+                            const isSelected = selectedFiles.has(file.id)
+                            return (
+                                <Grid item xs={6} sm={4} md={3} lg={2} key={file.id}>
+                                    <GlassCard
+                                        sx={{
+                                            position: 'relative',
+                                            cursor: 'pointer',
+                                            height: '100%',
+                                            border: isSelected ? '1px solid #00e5ff' : '1px solid rgba(255, 255, 255, 0.08)',
+                                            boxShadow: isSelected ? '0 0 15px rgba(0, 229, 255, 0.2)' : 'none',
+                                            '&:hover': {
+                                                transform: 'translateY(-4px)',
+                                                bgcolor: 'rgba(40,40,40,0.8)',
+                                                '& .file-actions': { opacity: 1 }
+                                            }
+                                        }}
+                                        onClick={() => handleFileClick(file)}
+                                    >
+                                        <Box 
+                                            sx={{ position: 'absolute', top: 8, left: 8, zIndex: 2 }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <Checkbox 
+                                                checked={isSelected}
+                                                onChange={() => toggleSelection(file.id)}
+                                                size="small"
+                                                icon={<Box sx={{ width: 20, height: 20, borderRadius: 1, border: '2px solid rgba(255,255,255,0.3)' }} />}
+                                                checkedIcon={<CheckCircle sx={{ color: '#00e5ff' }} />}
+                                            />
+                                        </Box>
+                                        
+                                        <Box className="file-actions" sx={{ position: 'absolute', top: 8, right: 8, opacity: 0, transition: 'opacity 0.2s', zIndex: 2 }}>
+                                            <IconButton size="small" sx={{ color: 'white', bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'black' } }}>
+                                                <MoreVert fontSize="small" />
+                                            </IconButton>
+                                        </Box>
+
+                                        <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160 }}>
+                                            {getFileIcon(file)}
+                                        </Box>
+                                        
+                                        <Box sx={{ p: 1.5, bgcolor: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <Typography variant="subtitle2" noWrap title={file.fileName} sx={{ color: 'white', fontWeight: 500 }}>
+                                                {file.fileName}
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                                                    {file.createdAt?.split('T')[0]}
+                                                </Typography>
+                                                {!file.isFolder && (
+                                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                                                        {formatSize(file.fileSize)}
+                                                    </Typography>
+                                                )}
+                                            </Box>
+                                        </Box>
+                                    </GlassCard>
+                                </Grid>
+                            )
+                        })}
+                    </Grid>
+                ) : (
+                    <TableContainer component={GlassCard}>
+                        <Table>
+                            <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.2)' }}>
+                                <TableRow>
+                                    <TableCell padding="checkbox">
+                                        <Checkbox 
+                                            indeterminate={selectedFiles.size > 0 && selectedFiles.size < files.length}
+                                            checked={files.length > 0 && selectedFiles.size === files.length}
+                                            onChange={selectAll}
+                                            sx={{ color: 'rgba(255,255,255,0.3)', '&.Mui-checked': { color: '#00e5ff' } }}
+                                        />
+                                    </TableCell>
+                                    <TableCell sx={{ color: 'rgba(255,255,255,0.7)' }}>Name</TableCell>
+                                    <TableCell sx={{ color: 'rgba(255,255,255,0.7)' }}>Size</TableCell>
+                                    <TableCell sx={{ color: 'rgba(255,255,255,0.7)' }}>Date</TableCell>
+                                    <TableCell sx={{ color: 'rgba(255,255,255,0.7)' }} align="right">Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {filteredFiles.map((file) => {
+                                    const isSelected = selectedFiles.has(file.id)
+                                    return (
+                                        <TableRow 
+                                            key={file.id}
+                                            hover
+                                            selected={isSelected}
+                                            onClick={() => handleFileClick(file)}
+                                            sx={{ 
+                                                cursor: 'pointer',
+                                                '&:hover': { bgcolor: 'rgba(255,255,255,0.05) !important' },
+                                                '&.Mui-selected': { bgcolor: 'rgba(0, 229, 255, 0.08) !important' }
+                                            }}
+                                        >
+                                            <TableCell padding="checkbox">
+                                                <Checkbox 
+                                                    checked={isSelected}
+                                                    onChange={(e) => { e.stopPropagation(); toggleSelection(file.id); }}
+                                                    sx={{ color: 'rgba(255,255,255,0.3)', '&.Mui-checked': { color: '#00e5ff' } }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                    {file.isFolder ? <Folder sx={{ color: '#FFD700' }} /> : <InsertDriveFile sx={{ color: '#00e5ff' }} />}
+                                                    <Typography sx={{ color: 'white' }}>{file.fileName}</Typography>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                                                {file.isFolder ? '-' : formatSize(file.fileSize)}
+                                            </TableCell>
+                                            <TableCell sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                                                {file.createdAt?.split('T')[0]}
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                <IconButton 
+                                                    size="small" 
+                                                    onClick={(e) => { e.stopPropagation(); /* Menu logic */ }}
+                                                    sx={{ color: 'rgba(255,255,255,0.5)' }}
+                                                >
+                                                    <MoreVert fontSize="small" />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                )}
+            </>
         )}
       </Box>
 
-      <Dialog open={createFolderDialog} onClose={handleCreateFolderCancel} maxWidth="sm" fullWidth>
-        <DialogTitle>新建文件夹</DialogTitle>
+      {/* --- DIALOGS --- */}
+      <Dialog 
+        open={createFolderDialog} 
+        onClose={() => setCreateFolderDialog(false)}
+        PaperProps={{
+            style: {
+                backgroundColor: 'rgba(30,30,30,0.9)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'white',
+                minWidth: '400px'
+            }
+        }}
+      >
+        <DialogTitle>Create New Folder</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="文件夹名称"
-            fullWidth
-            variant="outlined"
-            value={folderName}
-            onChange={(e) => setFolderName(e.target.value)}
-            placeholder="请输入文件夹名称"
-            sx={{ mt: 2 }}
-          />
+            <TextField
+                autoFocus
+                margin="dense"
+                label="Folder Name"
+                fullWidth
+                value={folderName}
+                onChange={(e) => setFolderName(e.target.value)}
+                sx={{
+                    mt: 1,
+                    '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+                    '& .MuiOutlinedInput-root': {
+                        color: 'white',
+                        '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+                        '&:hover fieldset': { borderColor: 'white' },
+                        '&.Mui-focused fieldset': { borderColor: '#00e5ff' }
+                    }
+                }}
+            />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCreateFolderCancel}>取消</Button>
-          <Button onClick={handleCreateFolderConfirm} variant="contained" disabled={!folderName.trim()}>
-            创建
-          </Button>
+            <Button onClick={() => setCreateFolderDialog(false)} sx={{ color: 'rgba(255,255,255,0.7)' }}>Cancel</Button>
+            <Button onClick={handleCreateFolder} variant="contained" sx={{ bgcolor: '#00e5ff', color: 'black', '&:hover': { bgcolor: '#00b8cc' } }}>Create</Button>
         </DialogActions>
       </Dialog>
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
+        <Alert severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
         </Alert>
       </Snackbar>
     </Box>

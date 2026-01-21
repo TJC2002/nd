@@ -86,17 +86,17 @@ const UploadPopover = ({ anchorEl, onClose }) => {
   }
 
   const renderTaskRow = (task) => (
-    <TableRow key={task.id} className="upload-task-row">
+    <TableRow key={task.id} className="upload-task-row" sx={{ '& td': { color: 'rgba(255, 255, 255, 0.9)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' } }}>
       <TableCell className="upload-task-cell">
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {getStatusIcon(task.status)}
-          <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+          <Typography variant="body2" noWrap sx={{ maxWidth: 200, color: 'white' }}>
             {task.fileName}
           </Typography>
         </Box>
       </TableCell>
       <TableCell className="upload-task-cell">
-        <Typography variant="body2">{formatFileSize(task.fileSize)}</Typography>
+        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>{formatFileSize(task.fileSize)}</Typography>
       </TableCell>
       <TableCell className="upload-task-cell">
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -104,16 +104,16 @@ const UploadPopover = ({ anchorEl, onClose }) => {
             <LinearProgress
               variant="determinate"
               value={task.progress}
-              sx={{ height: 6, borderRadius: 3 }}
+              sx={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
             />
           </Box>
-          <Typography variant="caption" sx={{ minWidth: 35 }}>
+          <Typography variant="caption" sx={{ minWidth: 35, color: 'rgba(255, 255, 255, 0.7)' }}>
             {task.progress}%
           </Typography>
         </Box>
       </TableCell>
       <TableCell className="upload-task-cell">
-        <Typography variant="body2">
+        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
           {task.speed > 0 ? formatSpeed(task.speed) : '-'}
         </Typography>
       </TableCell>
@@ -131,6 +131,7 @@ const UploadPopover = ({ anchorEl, onClose }) => {
             size="small"
             onClick={() => handleRemoveTask(task.id)}
             disabled={task.status === 'uploading'}
+            sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: 'error.main' } }}
           >
             <DeleteOutline fontSize="small" />
           </IconButton>
@@ -170,25 +171,29 @@ const UploadPopover = ({ anchorEl, onClose }) => {
         sx: {
           width: 600,
           maxHeight: 500,
-          borderRadius: 2,
+          borderRadius: 4,
+          backgroundColor: 'rgba(30, 30, 30, 0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
         },
       }}
     >
-      <Box className="upload-popover-header">
+      <Box className="upload-popover-header" sx={{ p: 2, borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CloudUploadOutlined />
-          <Typography variant="h6">上传任务</Typography>
+          <CloudUploadOutlined sx={{ color: 'primary.main' }} />
+          <Typography variant="h6" sx={{ color: 'white' }}>上传任务</Typography>
           <Chip
             label={`${activeTasks.length} 进行中`}
             size="small"
             color="primary"
-            sx={{ ml: 1 }}
+            sx={{ ml: 1, backgroundColor: 'rgba(var(--mui-palette-primary-main), 0.2)', border: '1px solid rgba(var(--mui-palette-primary-main), 0.5)' }}
           />
           {completedTasks.length > 0 && (
             <Chip
               label={`${completedTasks.length} 已完成`}
               size="small"
               color="success"
+              sx={{ backgroundColor: 'rgba(var(--mui-palette-success-main), 0.2)', border: '1px solid rgba(var(--mui-palette-success-main), 0.5)' }}
             />
           )}
           {failedTasks.length > 0 && (
@@ -196,19 +201,20 @@ const UploadPopover = ({ anchorEl, onClose }) => {
               label={`${failedTasks.length} 失败`}
               size="small"
               color="error"
+              sx={{ backgroundColor: 'rgba(var(--mui-palette-error-main), 0.2)', border: '1px solid rgba(var(--mui-palette-error-main), 0.5)' }}
             />
           )}
         </Box>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={onClose} size="small" sx={{ color: 'white' }}>
           <CloseIcon />
         </IconButton>
       </Box>
 
       <Box className="upload-popover-content">
         {tasks.length === 0 ? (
-          <Box className="upload-empty-state">
-            <CloudUploadOutlined sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="body1" color="text.secondary">
+          <Box className="upload-empty-state" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6 }}>
+            <CloudUploadOutlined sx={{ fontSize: 48, color: 'rgba(255, 255, 255, 0.3)', mb: 2 }} />
+            <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
               暂无上传任务
             </Typography>
           </Box>
@@ -216,7 +222,7 @@ const UploadPopover = ({ anchorEl, onClose }) => {
           <TableContainer>
             <Table size="small" stickyHeader>
               <TableHead>
-                <TableRow>
+                <TableRow sx={{ '& th': { backgroundColor: 'rgba(30, 30, 30, 0.9)', color: 'rgba(255, 255, 255, 0.7)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' } }}>
                   <TableCell className="upload-table-header">文件名</TableCell>
                   <TableCell className="upload-table-header">大小</TableCell>
                   <TableCell className="upload-table-header">进度</TableCell>
@@ -236,12 +242,13 @@ const UploadPopover = ({ anchorEl, onClose }) => {
       </Box>
 
       {tasks.length > 0 && (
-        <Box className="upload-popover-footer">
+        <Box className="upload-popover-footer" sx={{ p: 1, borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'flex-end' }}>
           <Button
             size="small"
             onClick={handleClearCompleted}
             disabled={completedTasks.length === 0}
             startIcon={<RefreshOutlined />}
+            sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: 'white' } }}
           >
             清除已完成
           </Button>
