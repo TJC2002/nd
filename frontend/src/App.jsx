@@ -5,6 +5,7 @@ import Login from './pages/login/Login'
 import Home from './pages/home/Home'
 import NotFound from './pages/NotFound'
 import MusicPage from './pages/music/MusicPage'
+import VideoTestPage from './pages/VideoTestPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import MusicDrawer from './components/music/MusicDrawer'
 import { AuthProvider } from './context/AuthContext'
@@ -46,6 +47,7 @@ function App() {
                             </ProtectedRoute>
                           } 
                         />
+                        <Route path="/test-video" element={<VideoTestPage />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </BrowserRouter>

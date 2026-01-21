@@ -59,6 +59,9 @@ import {
 import { FcFolder, FcImageFile, FcAudioFile, FcVideoFile, FcDocument, FcFile } from 'react-icons/fc'
 import { fileApi } from '../../services/api'
 import { useUpload } from '../../context/UploadContext'
+import VideoPlayer from '../../components/player/VideoPlayer' // Import VideoPlayer
+import DocumentPreview from '../../components/preview/DocumentPreview'
+import { ImagePreviewProvider, PreviewImage } from '../../components/preview/ImagePreview'
 import './FileManagement.css' // Ensure this file exists or styles are inline
 
 // --- Helper Components & Styles ---
@@ -101,6 +104,12 @@ const FileManagement = () => {
   const [folderName, setFolderName] = useState('')
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
   
+  // Preview
+  const [previewFile, setPreviewFile] = useState(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [docPreviewOpen, setDocPreviewOpen] = useState(false)
+  const [docFile, setDocFile] = useState(null)
+
   // Menus
   const [anchorElSort, setAnchorElSort] = useState(null)
 
@@ -191,9 +200,42 @@ const FileManagement = () => {
     if (file.isFolder) {
       navigate(`?folderId=${file.id}`)
     } else {
-      // Toggle selection for non-folders in this simplified logic, 
-      // or implement preview logic here
-      toggleSelection(file.id)
+        const mime = file.mimeType || ''
+        if (mime.startsWith('video/')) {
+            setPreviewFile(file)
+            setPreviewOpen(true)
+        } else if (mime.startsWith('image/')) {
+            // Image preview is handled by wrapping component, but we can trigger it or handle click
+            // For this implementation, we'll let the wrapper handle the click or 
+            // if clicking the card body, we might want to trigger it programmatically 
+            // but react-photo-view works best with declarative wrapper.
+            // Since we are using a card click, let's just toggle selection for now 
+            // and let the icon/thumbnail click trigger preview if we wrap it.
+            // BETTER: Let's assume clicking the file card opens preview for supported types.
+            // For images, we can't easily trigger the provider programmatically without ref.
+            // So we will modify the render to wrap the image icon/thumbnail with PreviewImage.
+            
+            // Actually, we can just do nothing here if we wrap the icon in the render loop.
+            // But if we want the WHOLE card to trigger preview:
+            // We would need a custom handler.
+            // For now, let's keep image preview on the Icon click or specific action.
+            // Or better: Use a simple state-based lightbox for images if we want to open on card click.
+            // But since we installed react-photo-view, let's use it.
+            
+            // Let's implement Document preview for others
+        } else if (
+            mime.includes('pdf') || 
+            mime.includes('word') || 
+            mime.includes('presentation') || 
+            mime.includes('spreadsheet') ||
+            mime.includes('officedocument')
+        ) {
+            setDocFile(file)
+            setDocPreviewOpen(true)
+        } else {
+            // Toggle selection for other files
+            toggleSelection(file.id)
+        }
     }
   }
 
@@ -219,6 +261,7 @@ const FileManagement = () => {
 
   const getFileIcon = (file) => {
     const size = 64;
+    const downloadUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/files/${file.id}/download?token=${localStorage.getItem('token')}`;
     
     if (file.isFolder) {
         return <FcFolder size={size} />;
@@ -227,7 +270,13 @@ const FileManagement = () => {
     const mime = file.mimeType || '';
     
     if (mime.includes('image')) {
-        return <FcImageFile size={size} />;
+        return (
+            <div onClick={(e) => e.stopPropagation()}>
+                <PreviewImage src={downloadUrl} alt={file.fileName}>
+                    <FcImageFile size={size} style={{ cursor: 'zoom-in' }} />
+                </PreviewImage>
+            </div>
+        );
     } else if (mime.includes('audio')) {
         return <FcAudioFile size={size} />;
     } else if (mime.includes('video')) {
@@ -263,6 +312,7 @@ const FileManagement = () => {
   // --- Render ---
 
   return (
+    <ImagePreviewProvider>
     <Box sx={{ p: { xs: 2, md: 4 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
       
       {/* --- HEADER SECTION --- */}
@@ -428,12 +478,12 @@ const FileManagement = () => {
                         {filteredFiles.map((file) => {
                             const isSelected = selectedFiles.has(file.id)
                             return (
-                                <Grid item xs={6} sm={4} md={3} lg={2.4} xl={2} key={file.id}> {/* Larger grid items */}
+                                <Grid item xs={6} sm={4} md={3} lg={2.4} xl={2} key={file.id}>
                                     <GlassCard
                                         sx={{
                                             position: 'relative',
                                             cursor: 'pointer',
-                                            height: 280, // Taller cards
+                                            height: { xs: 200, sm: 240, md: 280 }, // Responsive height
                                             border: isSelected ? '2px solid #2E86DE' : '1px solid rgba(255, 255, 255, 0.05)',
                                             boxShadow: isSelected ? '0 0 20px rgba(46, 134, 222, 0.3)' : 'none',
                                             background: isSelected ? 'rgba(46, 134, 222, 0.05)' : 'rgba(255, 255, 255, 0.02)',
@@ -622,7 +672,65 @@ const FileManagement = () => {
             {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* --- PREVIEW MODAL --- */}
+      <Dialog
+        fullScreen
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        PaperProps={{
+            sx: {
+                bgcolor: 'black',
+                backgroundImage: 'none'
+            }
+        }}
+      >
+        <Box sx={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Header/Close Button */}
+             <Box sx={{ 
+                position: 'absolute', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                zIndex: 10, 
+                p: 2, 
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <Typography variant="h6" sx={{ color: 'white', ml: 2, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                    {previewFile?.fileName}
+                </Typography>
+                <Button 
+                    onClick={() => setPreviewOpen(false)}
+                    sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}
+                >
+                    Close
+                </Button>
+            </Box>
+
+            {/* Video Player Container */}
+            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 0, md: 4 } }}>
+                 {previewFile && (
+                    <Box sx={{ width: '100%', maxWidth: '1200px', aspectRatio: '16/9' }}>
+                        <VideoPlayer 
+                            src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/files/${previewFile.id}/download?token=${localStorage.getItem('token')}`}
+                            poster={null} // Or fetch a thumbnail if available
+                        />
+                    </Box>
+                 )}
+            </Box>
+        </Box>
+      </Dialog>
+      <DocumentPreview 
+        open={docPreviewOpen}
+        onClose={() => setDocPreviewOpen(false)}
+        file={docFile}
+        downloadUrl={docFile ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/files/${docFile.id}/download?token=${localStorage.getItem('token')}` : ''}
+      />
     </Box>
+    </ImagePreviewProvider>
   )
 }
 
