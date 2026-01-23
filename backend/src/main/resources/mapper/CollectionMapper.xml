@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.nd.mapper.CollectionMapper">
+
+    <!-- Collection CRUD -->
+    <insert id="insertCollection" parameterType="com.example.nd.model.MediaCollection">
+        INSERT INTO collection (user_id, name, type, description, author, cover_image, created_at, updated_at, parent_id)
+        VALUES (#{userId}, #{name}, #{type}, #{description}, #{author}, #{coverImage}, NOW(), NOW(), #{parentId})
+    </insert>
+
+    <update id="updateCollection" parameterType="com.example.nd.model.MediaCollection">
+        UPDATE collection
+        SET name = #{name},
+            type = #{type},
+            description = #{description},
+            author = #{author},
+            cover_image = #{coverImage},
+            updated_at = NOW(),
+            parent_id = #{parentId}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteCollection" parameterType="java.lang.Long">
+        DELETE FROM collection WHERE id = #{id}
+    </delete>
+
+    <select id="getCollectionById" parameterType="java.lang.Long" resultType="com.example.nd.model.MediaCollection">
+        SELECT * FROM collection WHERE id = #{id}
+    </select>
+
+    <select id="getCollectionsByUserId" parameterType="java.lang.Long" resultType="com.example.nd.model.MediaCollection">
+        SELECT * FROM collection WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+
+    <select id="getCollectionsByParentId" parameterType="java.lang.Long" resultType="com.example.nd.model.MediaCollection">
+        SELECT * FROM collection WHERE parent_id = #{parentId} ORDER BY created_at DESC
+    </select>
+
+    <!-- CollectionItem CRUD -->
+    <insert id="insertCollectionItem" parameterType="com.example.nd.model.CollectionItem">
+        INSERT INTO collection_item (collection_id, file_id, order_index, item_type, metadata)
+        VALUES (#{collectionId}, #{fileId}, #{orderIndex}, #{itemType}, #{metadata})
+    </insert>
+
+    <update id="updateCollectionItem" parameterType="com.example.nd.model.CollectionItem">
+        UPDATE collection_item
+        SET file_id = #{fileId},
+            order_index = #{orderIndex},
+            item_type = #{itemType},
+            metadata = #{metadata}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteCollectionItem" parameterType="java.lang.Long">
+        DELETE FROM collection_item WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteCollectionItemsByCollectionId" parameterType="java.lang.Long">
+        DELETE FROM collection_item WHERE collection_id = #{collectionId}
+    </delete>
+
+    <select id="getCollectionItemById" parameterType="java.lang.Long" resultType="com.example.nd.model.CollectionItem">
+        SELECT * FROM collection_item WHERE id = #{id}
+    </select>
+
+    <select id="getCollectionItemsByCollectionId" parameterType="java.lang.Long" resultType="com.example.nd.model.CollectionItem">
+        SELECT * FROM collection_item WHERE collection_id = #{collectionId} ORDER BY order_index ASC
+    </select>
+
+    <select id="getMaxOrderIndex" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        SELECT MAX(order_index) FROM collection_item WHERE collection_id = #{collectionId}
+    </select>
+
+</mapper>

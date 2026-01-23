@@ -34,13 +34,8 @@ public class VideoCompressHandler extends BaseTaskHandler {
             throw new RuntimeException("File not found");
         }
 
-        FileMetadata metadata = fileMetadataMapper.getFileMetadataById(file.getMetadataId());
-        if (metadata == null) {
-            throw new RuntimeException("File metadata not found");
-        }
-
-        String filePath = metadata.getStoragePath();
-        if (!metadata.getMimeType().startsWith("video/")) {
+        String filePath = file.getStoragePath();
+        if (!file.getMimeType().startsWith("video/")) {
             throw new RuntimeException("Unsupported file type for video compression");
         }
 

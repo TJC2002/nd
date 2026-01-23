@@ -19,13 +19,13 @@
     </select>
     
     <insert id="insertFile" parameterType="com.example.nd.model.File" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO files (user_id, parent_id, metadata_id, name, is_folder, created_at, updated_at)
-        VALUES (#{userId}, #{parentId}, #{metadataId}, #{name}, #{isFolder}, NOW(), NOW())
+        INSERT INTO files (user_id, parent_id, name, size, hash_value, file_type, storage_node_id, storage_path, mime_type, is_folder, created_at, updated_at)
+        VALUES (#{userId}, #{parentId}, #{name}, #{size}, #{hashValue}, #{fileType}, #{storageNodeId}, #{storagePath}, #{mimeType}, #{isFolder}, NOW(), NOW())
     </insert>
     
     <update id="updateFile" parameterType="com.example.nd.model.File">
         UPDATE files
-        SET parent_id = #{parentId}, metadata_id = #{metadataId}, name = #{name}, is_folder = #{isFolder}, updated_at = NOW()
+        SET parent_id = #{parentId}, name = #{name}, size = #{size}, hash_value = #{hashValue}, file_type = #{fileType}, storage_node_id = #{storageNodeId}, storage_path = #{storagePath}, mime_type = #{mimeType}, is_folder = #{isFolder}, updated_at = NOW()
         WHERE id = #{id}
     </update>
     
@@ -34,9 +34,7 @@
     </update>
     
     <select id="getFileByHash" resultType="com.example.nd.model.File">
-        SELECT f.* FROM files f
-        JOIN file_metadata fm ON f.metadata_id = fm.id
-        WHERE fm.hash_value = #{fileHash} AND f.deleted_at IS NULL LIMIT 1
+        SELECT * FROM files WHERE hash_value = #{fileHash} AND deleted_at IS NULL LIMIT 1
     </select>
     
     <update id="updateFileVersion">
@@ -64,43 +62,48 @@
     </delete>
 
     <select id="searchFiles" resultType="com.example.nd.model.File">
-        SELECT f.* FROM files f
-        LEFT JOIN file_metadata fm ON f.metadata_id = fm.id
-        WHERE f.user_id = #{userId} AND f.deleted_at IS NULL
+        SELECT * FROM files
+        WHERE user_id = #{userId} AND deleted_at IS NULL
         <if test="request.keyword != null and request.keyword != ''">
-            AND f.name LIKE CONCAT('%', #{request.keyword}, '%')
+            AND name LIKE CONCAT('%', #{request.keyword}, '%')
         </if>
         <if test="request.folderId != null">
-            AND f.parent_id = #{request.folderId}
+            AND parent_id = #{request.folderId}
         </if>
         <if test="request.fileType != null and request.fileType != ''">
-            AND fm.mime_type LIKE CONCAT(#{request.fileType}, '%')
+            AND mime_type LIKE CONCAT(#{request.fileType}, '%')
         </if>
         <if test="request.minSize != null">
-            AND fm.size &gt;= #{request.minSize}
+            AND size &gt;= #{request.minSize}
         </if>
         <if test="request.maxSize != null">
-            AND fm.size &lt;= #{request.maxSize}
+            AND size &lt;= #{request.maxSize}
+        </if>
+        <if test="request.startDate != null">
+            AND created_at &gt;= #{request.startDate}
+        </if>
+        <if test="request.endDate != null">
+            AND created_at &lt;= #{request.endDate}
         </if>
         <choose>
             <when test="request.sortBy == 'name'">
-                ORDER BY f.name
+                ORDER BY name
                 <if test="request.sortOrder == 'desc'">
                     DESC
                 </if>
             </when>
             <when test="request.sortBy == 'size'">
-                ORDER BY fm.size
+                ORDER BY size
                 <if test="request.sortOrder == 'desc'">
                     DESC
                 </if>
             </when>
             <otherwise>
-                ORDER BY f.created_at DESC
+                ORDER BY created_at DESC
             </otherwise>
         </choose>
         <if test="request.page != null and request.pageSize != null">
-            LIMIT #{request.pageSize} OFFSET #{request.page * request.pageSize}
+            LIMIT #{request.pageSize} OFFSET #{request.offset}
         </if>
     </select>
 

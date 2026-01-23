@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.nd.mapper.UserConfigMapper">
+    
+    <select id="getUserConfigByKey" resultType="com.example.nd.model.UserConfig">
+        SELECT * FROM user_configs WHERE user_id = #{userId} AND `key` = #{key}
+    </select>
+    
+    <select id="getUserConfigsByUserId" resultType="com.example.nd.model.UserConfig">
+        SELECT * FROM user_configs WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+    
+    <insert id="insertUserConfig" parameterType="com.example.nd.model.UserConfig" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_configs (user_id, `key`, `value`, description, created_at, updated_at)
+        VALUES (#{userId}, #{key}, #{value}, #{description}, NOW(), NOW())
+    </insert>
+    
+    <update id="updateUserConfig" parameterType="com.example.nd.model.UserConfig">
+        UPDATE user_configs
+        SET `value` = #{value}, description = #{description}, updated_at = NOW()
+        WHERE user_id = #{userId} AND `key` = #{key}
+    </update>
+    
+    <delete id="deleteUserConfig">
+        DELETE FROM user_configs WHERE user_id = #{userId} AND `key` = #{key}
+    </delete>
+    
+    <delete id="deleteUserConfigsByUserId">
+        DELETE FROM user_configs WHERE user_id = #{userId}
+    </delete>
+</mapper>

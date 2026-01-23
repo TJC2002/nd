@@ -9,6 +9,7 @@ import com.example.nd.model.FileMetadata;
 import com.example.nd.model.UploadTask;
 import com.example.nd.util.AuthUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,8 +38,11 @@ public class UploadServiceImpl implements UploadService {
     @Autowired
     private CoverService coverService;
 
-    private static final String STORAGE_BASE_PATH = "/storage/files/";
-    private static final String TEMP_BASE_PATH = "/storage/temp/";
+    @Value("${app.storage.files-path:./storage/files}")
+    private String storageBasePath;
+
+    @Value("${app.storage.temp-path:./storage/temp}")
+    private String tempBasePath;
 
     @Override
     public CheckFileResponse checkFileExist(CheckFileRequest request) {
@@ -50,12 +54,11 @@ public class UploadServiceImpl implements UploadService {
     }
 
     @Override
-    @Transactional
     public UploadInitResponse initializeUpload(UploadInitRequest request) {
         Long userId = AuthUtil.getUserId();
         
         String uploadId = UUID.randomUUID().toString();
-        String tempPath = TEMP_BASE_PATH + uploadId + "/";
+        String tempPath = tempBasePath + "/" + uploadId + "/";
         
         UploadTask uploadTask = new UploadTask();
         uploadTask.setUploadId(uploadId);
@@ -66,10 +69,10 @@ public class UploadServiceImpl implements UploadService {
         uploadTask.setFileHash(request.getHash());
         uploadTask.setChunkSize(request.getChunkSize());
         uploadTask.setTotalChunks(request.getTotalChunks());
-        uploadTask.setUploadedChunks("");
+        uploadTask.setUploadedChunks(null);
         uploadTask.setStatus("pending");
         uploadTask.setTempPath(tempPath);
-        uploadTask.setParentFolderId(request.getParentFolderId());
+        uploadTask.setParentFolderId(request.getParentFolderId() != null ? request.getParentFolderId() : 0L);
         uploadTask.setCreatedAt(LocalDateTime.now());
         uploadTask.setUpdatedAt(LocalDateTime.now());
         
@@ -131,24 +134,27 @@ public class UploadServiceImpl implements UploadService {
         // 检查文件是否已存在（秒传逻辑）
         FileMetadata existingMetadata = fileMetadataMapper.getFileMetadataByHash(request.getHash());
         if (existingMetadata != null) {
-            // 文件已存在，直接创建用户关联记录
             File file = new File();
             file.setUserId(uploadTask.getUserId());
             file.setParentId(uploadTask.getParentFolderId() != null ? uploadTask.getParentFolderId() : 0L);
-            file.setMetadataId(existingMetadata.getId());
             file.setName(uploadTask.getFileName());
+            file.setSize(existingMetadata.getSize());
+            file.setHashValue(existingMetadata.getHashValue());
+            file.setFileType(uploadTask.getFileType());
+            file.setStorageNodeId(existingMetadata.getStorageNodeId());
+            file.setStoragePath(existingMetadata.getStoragePath());
+            file.setMimeType(existingMetadata.getMimeType());
             file.setIsFolder(false);
-            
+
             fileMapper.insertFile(file);
-            
-            // 更新文件元数据的引用计数
+
             fileMetadataMapper.updateReferenceCount(existingMetadata.getId(), 1);
-            
+
             uploadTask.setStatus("completed");
             uploadTaskMapper.updateUploadTask(uploadTask);
-            
+
             cleanUpTempFiles(uploadTask.getTempPath());
-            
+
             return file;
         }
         
@@ -157,7 +163,7 @@ public class UploadServiceImpl implements UploadService {
         String hash = request.getHash();
         String hashPrefix1 = hash.substring(0, 2);
         String hashPrefix2 = hash.substring(2, 4);
-        String finalPath = STORAGE_BASE_PATH + hashPrefix1 + "/" + hashPrefix2 + "/" + hash + fileExtension;
+        String finalPath = storageBasePath + "/" + hashPrefix1 + "/" + hashPrefix2 + "/" + hash + fileExtension;
         
         try {
             Path finalFilePath = Paths.get(finalPath);
@@ -199,10 +205,15 @@ public class UploadServiceImpl implements UploadService {
             File file = new File();
             file.setUserId(uploadTask.getUserId());
             file.setParentId(uploadTask.getParentFolderId() != null ? uploadTask.getParentFolderId() : 0L);
-            file.setMetadataId(fileMetadata.getId());
             file.setName(uploadTask.getFileName());
+            file.setSize(fileMetadata.getSize());
+            file.setHashValue(fileMetadata.getHashValue());
+            file.setFileType(uploadTask.getFileType());
+            file.setStorageNodeId(fileMetadata.getStorageNodeId());
+            file.setStoragePath(fileMetadata.getStoragePath());
+            file.setMimeType(fileMetadata.getMimeType());
             file.setIsFolder(false);
-            
+
             fileMapper.insertFile(file);
             
             // 生成文件封面

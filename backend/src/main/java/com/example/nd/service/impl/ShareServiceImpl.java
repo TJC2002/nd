@@ -262,12 +262,6 @@ public class ShareServiceImpl implements ShareService {
             throw new RuntimeException("文件不存在");
         }
 
-        // 获取文件元数据
-        FileMetadata metadata = fileMetadataMapper.getFileMetadataById(file.getMetadataId());
-        if (metadata == null) {
-            throw new RuntimeException("文件元数据不存在");
-        }
-
         // 记录下载日志
         ShareAccessLog accessLog = new ShareAccessLog();
         accessLog.setShareId(share.getId());
@@ -282,7 +276,7 @@ public class ShareServiceImpl implements ShareService {
         // 设置响应头
         response.setContentType("application/octet-stream");
         response.setHeader("Content-Disposition", "attachment; filename=\"" + file.getName() + "\"");
-        response.setHeader("Content-Length", String.valueOf(metadata.getSize()));
+        response.setHeader("Content-Length", String.valueOf(file.getSize()));
 
         // 这里应该调用FileService来下载文件
         // 暂时返回文件路径信息，实际实现需要集成FileService

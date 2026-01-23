@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.nd.mapper.DownloadTaskMapper">
+
+    <!-- DownloadTask CRUD -->
+    <insert id="insertDownloadTask" parameterType="com.example.nd.model.DownloadTask">
+        INSERT INTO download_tasks (user_id, task_name, download_url, download_type, file_name, file_size, save_path, status, progress, created_at, updated_at)
+        VALUES (#{userId}, #{taskName}, #{downloadUrl}, #{downloadType}, #{fileName}, #{fileSize}, #{savePath}, 'pending', 0, NOW(), NOW())
+    </insert>
+
+    <update id="updateDownloadTask" parameterType="com.example.nd.model.DownloadTask">
+        UPDATE download_tasks
+        SET task_name = #{taskName},
+            download_url = #{downloadUrl},
+            download_type = #{downloadType},
+            file_name = #{fileName},
+            file_size = #{fileSize},
+            save_path = #{savePath},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteDownloadTask" parameterType="java.lang.Long">
+        DELETE FROM download_tasks WHERE id = #{id}
+    </delete>
+
+    <select id="getDownloadTaskById" parameterType="java.lang.Long" resultType="com.example.nd.model.DownloadTask">
+        SELECT * FROM download_tasks WHERE id = #{id}
+    </select>
+
+    <select id="getDownloadTasksByUserId" parameterType="java.lang.Long" resultType="com.example.nd.model.DownloadTask">
+        SELECT * FROM download_tasks WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+
+    <select id="getDownloadTasksByStatus" parameterType="java.lang.String" resultType="com.example.nd.model.DownloadTask">
+        SELECT * FROM download_tasks WHERE status = #{status} ORDER BY created_at DESC
+    </select>
+
+    <update id="updateTaskStatus" parameterType="java.util.Map">
+        UPDATE download_tasks
+        SET status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateTaskProgress" parameterType="java.util.Map">
+        UPDATE download_tasks
+        SET progress = #{progress},
+            download_speed = #{downloadSpeed},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateTaskError" parameterType="java.util.Map">
+        UPDATE download_tasks
+        SET status = 'failed',
+            error_message = #{errorMessage},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="markTaskCompleted" parameterType="java.lang.Long">
+        UPDATE download_tasks
+        SET status = 'completed',
+            progress = 100,
+            completed_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- DownloadChunk CRUD -->
+    <insert id="insertDownloadChunk" parameterType="com.example.nd.model.DownloadChunk">
+        INSERT INTO download_chunks (task_id, chunk_index, chunk_size, chunk_path, status, created_at)
+        VALUES (#{taskId}, #{chunkIndex}, #{chunkSize}, #{chunkPath}, 'pending', NOW())
+    </insert>
+
+    <update id="updateDownloadChunk" parameterType="com.example.nd.model.DownloadChunk">
+        UPDATE download_chunks
+        SET chunk_size = #{chunkSize},
+            chunk_path = #{chunkPath},
+            status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteDownloadChunk" parameterType="java.lang.Long">
+        DELETE FROM download_chunks WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteChunksByTaskId" parameterType="java.lang.Long">
+        DELETE FROM download_chunks WHERE task_id = #{taskId}
+    </delete>
+
+    <select id="getDownloadChunkById" parameterType="java.lang.Long" resultType="com.example.nd.model.DownloadChunk">
+        SELECT * FROM download_chunks WHERE id = #{id}
+    </select>
+
+    <select id="getChunksByTaskId" parameterType="java.lang.Long" resultType="com.example.nd.model.DownloadChunk">
+        SELECT * FROM download_chunks WHERE task_id = #{taskId} ORDER BY chunk_index ASC
+    </select>
+
+</mapper>

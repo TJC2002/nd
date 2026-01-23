@@ -6,6 +6,11 @@ import Home from './pages/home/Home'
 import NotFound from './pages/NotFound'
 import MusicPage from './pages/music/MusicPage'
 import VideoTestPage from './pages/VideoTestPage'
+import VideoLibrary from './pages/media/VideoLibrary'
+import MusicLibrary from './pages/media/MusicLibrary'
+import ComingSoon from './pages/media/ComingSoon'
+import ComicLibrary from './pages/media/ComicLibrary'
+import SearchPage from './pages/search/SearchPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import MusicDrawer from './components/music/MusicDrawer'
 import { AuthProvider } from './context/AuthContext'
@@ -40,10 +45,58 @@ function App() {
                           } 
                         />
                         <Route 
+                          path="/search" 
+                          element={
+                            <ProtectedRoute>
+                              <SearchPage />
+                            </ProtectedRoute>
+                          } 
+                        />
+                        <Route 
                           path="/music" 
                           element={
                             <ProtectedRoute>
                               <MusicPage />
+                            </ProtectedRoute>
+                          } 
+                        />
+                        <Route 
+                          path="/media/video" 
+                          element={
+                            <ProtectedRoute>
+                              <div style={{ padding: '80px 20px 20px 100px' }}>
+                                <VideoLibrary />
+                              </div>
+                            </ProtectedRoute>
+                          } 
+                        />
+                        <Route 
+                          path="/media/music" 
+                          element={
+                            <ProtectedRoute>
+                              <div style={{ padding: '80px 20px 20px 100px' }}>
+                                <MusicLibrary />
+                              </div>
+                            </ProtectedRoute>
+                          } 
+                        />
+                        <Route 
+                          path="/media/comics" 
+                          element={
+                            <ProtectedRoute>
+                              <div style={{ padding: '80px 20px 20px 100px' }}>
+                                <ComicLibrary />
+                              </div>
+                            </ProtectedRoute>
+                          } 
+                        />
+                        <Route 
+                          path="/media/*" 
+                          element={
+                            <ProtectedRoute>
+                              <div style={{ padding: '80px 20px 20px 100px' }}>
+                                <ComingSoon />
+                              </div>
                             </ProtectedRoute>
                           } 
                         />

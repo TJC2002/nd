@@ -50,7 +50,7 @@ const initialState = {
   tasks: [],
   dialogOpen: false,
   popoverOpen: false,
-  currentFolderId: null,
+  currentFolderId: 0,
 }
 
 export const UploadProvider = ({ children }) => {

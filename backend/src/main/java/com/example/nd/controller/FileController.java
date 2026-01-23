@@ -6,6 +6,7 @@ import com.example.nd.model.File;
 import com.example.nd.model.FileInfo;
 import com.example.nd.model.UploadTask;
 import com.example.nd.service.CoverService;
+import com.example.nd.service.FileSearchService;
 import com.example.nd.service.FileService;
 import com.example.nd.service.UploadService;
 import com.example.nd.util.AuthUtil;
@@ -41,6 +42,9 @@ public class FileController {
     
     @Autowired
     private FileMetadataMapper fileMetadataMapper;
+    
+    @Autowired
+    private FileSearchService fileSearchService;
 
 
     @GetMapping
@@ -62,6 +66,44 @@ public class FileController {
         Long userId = AuthUtil.getUserId();
         List<FileInfo> path = fileService.getFolderPath(folderId, userId);
         return ApiResponse.success(path);
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "搜索文件", description = "根据关键词、文件类型、大小、日期等条件搜索文件")
+    public ApiResponse<List<SearchResult>> searchFiles(@RequestParam(required = false) String keyword,
+                                                     @RequestParam(required = false) String fileType,
+                                                     @RequestParam(required = false) Long minSize,
+                                                     @RequestParam(required = false) Long maxSize,
+                                                     @RequestParam(required = false) Long folderId,
+                                                     @RequestParam(required = false) String startDate,
+                                                     @RequestParam(required = false) String endDate,
+                                                     @RequestParam(required = false) String sortBy,
+                                                     @RequestParam(required = false) String sortOrder,
+                                                     @RequestParam(required = false, defaultValue = "0") Integer page,
+                                                     @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
+        Long userId = AuthUtil.getUserId();
+        SearchRequest request = new SearchRequest();
+        request.setKeyword(keyword);
+        request.setFileType(fileType);
+        request.setMinSize(minSize);
+        request.setMaxSize(maxSize);
+        request.setFolderId(folderId);
+        
+        if (startDate != null && !startDate.isEmpty()) {
+            request.setStartDate(java.time.LocalDateTime.parse(startDate));
+        }
+        if (endDate != null && !endDate.isEmpty()) {
+            request.setEndDate(java.time.LocalDateTime.parse(endDate));
+        }
+        
+        request.setSortBy(sortBy);
+        request.setSortOrder(sortOrder);
+        request.setPage(page);
+        request.setPageSize(pageSize);
+        request.setOffset(page * pageSize);
+        
+        List<SearchResult> results = fileSearchService.searchFiles(userId, request);
+        return ApiResponse.success(results);
     }
 
     @PostMapping("/upload")

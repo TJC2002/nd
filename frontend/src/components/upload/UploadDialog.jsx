@@ -109,9 +109,9 @@ const UploadDialog = () => {
       }
     }
 
-    setUploading(false)
-    setFiles([])
     setDialogOpen(false)
+    setFiles([])
+    setUploading(false)
   }
 
   const handleClose = () => {

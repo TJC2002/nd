@@ -110,6 +110,19 @@ INSERT IGNORE INTO system_configs (`key`, `value`, description) VALUES
 ('chunk_size', '4194304', '文件上传分片大小（4MB）'),
 ('max_file_size', '10737418240', '单个文件最大大小（10GB）');
 
+# 创建用户配置表
+CREATE TABLE IF NOT EXISTS user_configs (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    `key` VARCHAR(100) NOT NULL,
+    `value` TEXT,
+    description VARCHAR(255),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY (user_id, `key`)
+);
+
 # 创建异步任务表
 CREATE TABLE IF NOT EXISTS async_tasks (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,

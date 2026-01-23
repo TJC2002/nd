@@ -1,6 +1,7 @@
 package com.example.nd.service.impl;
 
 import com.example.nd.service.CoverService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -14,7 +15,9 @@ import java.nio.file.Paths;
 @Service
 public class CoverServiceImpl implements CoverService {
 
-    private static final String COVER_BASE_PATH = "/storage/covers/";
+    @Value("${app.storage.covers-path:./storage/covers}")
+    private String coverBasePath;
+
     private static final int SMALL_SIZE = 128;
     private static final int MEDIUM_SIZE = 256;
     private static final int LARGE_SIZE = 512;
@@ -22,12 +25,12 @@ public class CoverServiceImpl implements CoverService {
     @Override
     public String generateCover(Long fileId, Path filePath, String mimeType) throws IOException {
         // 确保封面存储目录存在
-        Path coverDir = Paths.get(COVER_BASE_PATH);
+        Path coverDir = Paths.get(coverBasePath);
         if (!Files.exists(coverDir)) {
             Files.createDirectories(coverDir);
         }
 
-        String coverPath = COVER_BASE_PATH + fileId + "_cover.jpg";
+        String coverPath = coverBasePath + "/" + fileId + "_cover.jpg";
         Path coverFilePath = Paths.get(coverPath);
 
         try {
@@ -56,25 +59,25 @@ public class CoverServiceImpl implements CoverService {
 
     @Override
     public Path getCover(Long fileId, String size) {
-        Path coverPath = Paths.get(COVER_BASE_PATH + fileId + "_cover.jpg");
+        Path coverPath = Paths.get(coverBasePath + "/" + fileId + "_cover.jpg");
         
         if (Files.exists(coverPath)) {
             return coverPath;
         }
         
         // 如果没有封面，返回默认封面
-        return Paths.get(COVER_BASE_PATH + "default_cover.jpg");
+        return Paths.get(coverBasePath + "/" + "default_cover.jpg");
     }
 
     @Override
     public boolean hasCover(Long fileId) {
-        Path coverPath = Paths.get(COVER_BASE_PATH + fileId + "_cover.jpg");
+        Path coverPath = Paths.get(coverBasePath + "/" + fileId + "_cover.jpg");
         return Files.exists(coverPath);
     }
 
     @Override
     public void deleteCover(Long fileId) {
-        Path coverPath = Paths.get(COVER_BASE_PATH + fileId + "_cover.jpg");
+        Path coverPath = Paths.get(coverBasePath + "/" + fileId + "_cover.jpg");
         try {
             if (Files.exists(coverPath)) {
                 Files.delete(coverPath);

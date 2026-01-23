@@ -54,7 +54,11 @@ import {
   CreateNewFolderOutlined,
   Image as ImageIcon,
   AudioFile,
-  InsertDriveFile
+  InsertDriveFile,
+  Edit,
+  Download,
+  ArrowUpward,
+  ArrowDownward,
 } from '@mui/icons-material'
 import { FcFolder, FcImageFile, FcAudioFile, FcVideoFile, FcDocument, FcFile } from 'react-icons/fc'
 import { fileApi } from '../../services/api'
@@ -62,6 +66,7 @@ import { useUpload } from '../../context/UploadContext'
 import VideoPlayer from '../../components/player/VideoPlayer' // Import VideoPlayer
 import DocumentPreview from '../../components/preview/DocumentPreview'
 import { ImagePreviewProvider, PreviewImage } from '../../components/preview/ImagePreview'
+import ShareDialog from '../../components/share/ShareDialog'
 import './FileManagement.css' // Ensure this file exists or styles are inline
 
 // --- Helper Components & Styles ---
@@ -70,10 +75,15 @@ const GlassCard = ({ children, sx, ...props }) => (
   <Paper
     elevation={0}
     sx={{
-      background: 'rgba(255, 255, 255, 0.03)',
+      background: theme => theme.palette.mode === 'dark' 
+        ? 'rgba(255, 255, 255, 0.03)' 
+        : 'rgba(255, 255, 255, 0.6)',
       backdropFilter: 'blur(16px)',
-      border: '1px solid rgba(255, 255, 255, 0.08)',
-      borderRadius: 6, // 24px radius
+      border: '1px solid',
+      borderColor: theme => theme.palette.mode === 'dark' 
+        ? 'rgba(255, 255, 255, 0.08)' 
+        : 'rgba(0, 0, 0, 0.08)',
+      borderRadius: 3, // Reduced radius (was 6)
       overflow: 'hidden',
       transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       ...sx
@@ -84,8 +94,11 @@ const GlassCard = ({ children, sx, ...props }) => (
   </Paper>
 )
 
+import { useTheme } from '@mui/material/styles'
+
 const FileManagement = () => {
   // --- State & Hooks ---
+  const theme = useTheme()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { setDialogOpen, setCurrentFolder } = useUpload()
@@ -98,6 +111,7 @@ const FileManagement = () => {
   const [selectedFiles, setSelectedFiles] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('name') // 'name' | 'date' | 'size'
+  const [sortOrder, setSortOrder] = useState('asc') // 'asc' | 'desc'
   
   // Dialogs
   const [createFolderDialog, setCreateFolderDialog] = useState(false)
@@ -112,6 +126,9 @@ const FileManagement = () => {
 
   // Menus
   const [anchorElSort, setAnchorElSort] = useState(null)
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null)
+  const [activeFile, setActiveFile] = useState(null)
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
   // --- Effects ---
 
@@ -194,6 +211,31 @@ const FileManagement = () => {
     }
   }
 
+  const handleBatchDownload = async () => {
+    if (selectedFiles.size === 0) return
+
+    try {
+      let successCount = 0
+      for (const id of selectedFiles) {
+        const file = files.find(f => f.id === id)
+        if (file && !file.isFolder) {
+          const response = await fileApi.downloadFile(id)
+          const url = window.URL.createObjectURL(new Blob([response]))
+          const link = document.createElement('a')
+          link.href = url
+          link.setAttribute('download', file.fileName)
+          document.body.appendChild(link)
+          link.click()
+          link.remove()
+          successCount++
+        }
+      }
+      showSnackbar(`成功下载 ${successCount} 个文件`)
+    } catch (error) {
+      showSnackbar('部分文件下载失败', 'error')
+    }
+  }
+
   // --- Event Handlers ---
 
   const handleFileClick = (file) => {
@@ -257,11 +299,45 @@ const FileManagement = () => {
     setSnackbar({ open: true, message, severity })
   }
 
+  const handleMenuClick = (event, file) => {
+    event.stopPropagation() // Stop click from reaching the card
+    event.preventDefault() // Prevent any default action
+    setMenuAnchorEl(event.currentTarget)
+    setActiveFile(file)
+  }
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null)
+    setActiveFile(null)
+  }
+
+  const handleShare = () => {
+    setShareDialogOpen(true)
+    setMenuAnchorEl(null) // Keep activeFile for dialog
+  }
+
+  const handleDownload = async () => {
+    if (!activeFile) return
+    try {
+      const response = await fileApi.downloadFile(activeFile.id)
+      const url = window.URL.createObjectURL(new Blob([response]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', activeFile.fileName)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (error) {
+      showSnackbar('Download failed', 'error')
+    }
+    handleMenuClose()
+  }
+
   // --- Render Helpers ---
 
   const getFileIcon = (file) => {
     const size = 64;
-    const downloadUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/files/${file.id}/download?token=${localStorage.getItem('token')}`;
+    const downloadUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/api/files/${file.id}/download?token=${localStorage.getItem('token')}`;
     
     if (file.isFolder) {
         return <FcFolder size={size} />;
@@ -303,10 +379,12 @@ const FileManagement = () => {
       if (a.isFolder && !b.isFolder) return -1
       if (!a.isFolder && b.isFolder) return 1
       
-      if (sortBy === 'name') return a.fileName.localeCompare(b.fileName)
-      if (sortBy === 'size') return (a.fileSize || 0) - (b.fileSize || 0)
-      if (sortBy === 'date') return new Date(b.createdAt) - new Date(a.createdAt)
-      return 0
+      let compare = 0
+      if (sortBy === 'name') compare = a.fileName.localeCompare(b.fileName)
+      else if (sortBy === 'size') compare = (a.fileSize || 0) - (b.fileSize || 0)
+      else if (sortBy === 'date') compare = new Date(a.createdAt) - new Date(b.createdAt)
+      
+      return sortOrder === 'asc' ? compare : -compare
     })
 
   // --- Render ---
@@ -320,22 +398,21 @@ const FileManagement = () => {
         {/* Row 1: Breadcrumbs & Search */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
           <Breadcrumbs 
-            separator={<NavigateNext fontSize="small" sx={{ color: 'rgba(255,255,255,0.3)' }} />}
+            separator={<NavigateNext fontSize="small" sx={{ color: 'text.secondary' }} />}
             sx={{ '& .MuiBreadcrumbs-ol': { alignItems: 'center' } }}
           >
             <Link
               underline="none"
-              color={!currentFolderId ? "primary" : "inherit"}
               onClick={() => navigate('/')}
               sx={{ 
                   display: 'flex', 
                   alignItems: 'center', 
                   cursor: 'pointer', 
-                  color: !currentFolderId ? 'white' : 'rgba(255,255,255,0.5)',
+                  color: !currentFolderId ? 'text.primary' : 'text.secondary',
                   fontSize: '1.5rem',
                   fontWeight: 700,
                   transition: 'color 0.2s',
-                  '&:hover': { color: 'white' }
+                  '&:hover': { color: 'text.primary' }
               }}
             >
               Files
@@ -349,11 +426,11 @@ const FileManagement = () => {
                         onClick={() => navigate(`?folderId=${folder.id}`)}
                         sx={{ 
                             cursor: 'pointer', 
-                            color: isLast ? 'white' : 'rgba(255,255,255,0.5)',
+                            color: isLast ? 'text.primary' : 'text.secondary',
                             fontSize: '1.5rem',
                             fontWeight: 700,
                             transition: 'color 0.2s',
-                            '&:hover': { color: 'white' }
+                            '&:hover': { color: 'text.primary' }
                         }}
                     >
                         {folder.fileName}
@@ -386,9 +463,12 @@ const FileManagement = () => {
               sx={{
                 borderRadius: 4,
                 px: 3,
-                color: 'white',
-                borderColor: 'rgba(255,255,255,0.2)',
-                '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.05)' }
+                color: 'text.primary',
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                '&:hover': { 
+                  borderColor: 'text.primary', 
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                }
               }}
             >
               New Folder
@@ -397,6 +477,15 @@ const FileManagement = () => {
             {selectedFiles.size > 0 && (
                 <Fade in={selectedFiles.size > 0}>
                     <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            startIcon={<Download />}
+                            onClick={handleBatchDownload}
+                            sx={{ borderRadius: 4, px: 3 }}
+                        >
+                            Download ({selectedFiles.size})
+                        </Button>
                         <Button
                             variant="outlined"
                             color="error"
@@ -415,32 +504,63 @@ const FileManagement = () => {
              <Button
                 endIcon={<Sort />}
                 onClick={(e) => setAnchorElSort(e.currentTarget)}
-                sx={{ color: 'rgba(255,255,255,0.7)', textTransform: 'none', fontSize: '0.95rem' }}
+                sx={{ color: 'text.secondary', textTransform: 'none', fontSize: '0.95rem' }}
              >
-                Sort by: {sortBy}
+                Sort by: {sortBy} ({sortOrder.toUpperCase()})
              </Button>
             <Menu
                 anchorEl={anchorElSort}
                 open={Boolean(anchorElSort)}
                 onClose={() => setAnchorElSort(null)}
                 PaperProps={{
-                    sx: { bgcolor: '#1e1e1e', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 3 }
+                    sx: { 
+                      bgcolor: 'background.paper', 
+                      color: 'text.primary', 
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 3,
+                      minWidth: 150
+                    }
                 }}
             >
-                <MenuItem onClick={() => { setSortBy('name'); setAnchorElSort(null); }}>Name</MenuItem>
-                <MenuItem onClick={() => { setSortBy('date'); setAnchorElSort(null); }}>Date</MenuItem>
-                <MenuItem onClick={() => { setSortBy('size'); setAnchorElSort(null); }}>Size</MenuItem>
+                <MenuItem onClick={() => { setSortBy('name'); setAnchorElSort(null); }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        Name {sortBy === 'name' && <CheckCircle fontSize="small" color="primary" />}
+                    </Box>
+                </MenuItem>
+                <MenuItem onClick={() => { setSortBy('date'); setAnchorElSort(null); }}>
+                     <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        Date {sortBy === 'date' && <CheckCircle fontSize="small" color="primary" />}
+                    </Box>
+                </MenuItem>
+                <MenuItem onClick={() => { setSortBy('size'); setAnchorElSort(null); }}>
+                     <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        Size {sortBy === 'size' && <CheckCircle fontSize="small" color="primary" />}
+                    </Box>
+                </MenuItem>
+                <Box sx={{ my: 1, borderTop: '1px solid', borderColor: 'divider' }} />
+                <MenuItem onClick={() => { setSortOrder('asc'); setAnchorElSort(null); }}>
+                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ArrowUpward fontSize="small" /> Ascending {sortOrder === 'asc' && <CheckCircle fontSize="small" color="primary" sx={{ ml: 'auto' }} />}
+                    </Box>
+                </MenuItem>
+                <MenuItem onClick={() => { setSortOrder('desc'); setAnchorElSort(null); }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ArrowDownward fontSize="small" /> Descending {sortOrder === 'desc' && <CheckCircle fontSize="small" color="primary" sx={{ ml: 'auto' }} />}
+                    </Box>
+                </MenuItem>
             </Menu>
 
-            <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 3, p: 0.5, display: 'flex' }}>
+            <Box sx={{ bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', borderRadius: 3, p: 0.5, display: 'flex' }}>
                 <IconButton 
                     size="small" 
                     onClick={() => setViewMode('grid')}
                     sx={{ 
-                        color: viewMode === 'grid' ? 'black' : 'rgba(255,255,255,0.5)',
-                        bgcolor: viewMode === 'grid' ? 'white' : 'transparent',
+                        color: viewMode === 'grid' ? 'text.primary' : 'text.secondary',
+                        bgcolor: viewMode === 'grid' ? 'background.paper' : 'transparent',
                         borderRadius: 2.5,
-                        '&:hover': { bgcolor: viewMode === 'grid' ? 'white' : 'rgba(255,255,255,0.1)' }
+                        boxShadow: viewMode === 'grid' ? 1 : 0,
+                        '&:hover': { bgcolor: viewMode === 'grid' ? 'background.paper' : theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
                     }}
                 >
                     <GridViewRounded fontSize="small" />
@@ -449,10 +569,11 @@ const FileManagement = () => {
                     size="small" 
                     onClick={() => setViewMode('list')}
                     sx={{ 
-                        color: viewMode === 'list' ? 'black' : 'rgba(255,255,255,0.5)',
-                        bgcolor: viewMode === 'list' ? 'white' : 'transparent',
+                        color: viewMode === 'list' ? 'text.primary' : 'text.secondary',
+                        bgcolor: viewMode === 'list' ? 'background.paper' : 'transparent',
                         borderRadius: 2.5,
-                        '&:hover': { bgcolor: viewMode === 'list' ? 'white' : 'rgba(255,255,255,0.1)' }
+                        boxShadow: viewMode === 'list' ? 1 : 0,
+                        '&:hover': { bgcolor: viewMode === 'list' ? 'background.paper' : theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
                     }}
                 >
                     <TableRowsRounded fontSize="small" />
@@ -464,11 +585,11 @@ const FileManagement = () => {
 
       {/* --- CONTENT SECTION --- */}
       <Box sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
-        {loading && <LinearProgress sx={{ bgcolor: 'rgba(255,255,255,0.05)', '& .MuiLinearProgress-bar': { bgcolor: '#00e5ff' } }} />}
+        {loading && <LinearProgress sx={{ bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', '& .MuiLinearProgress-bar': { bgcolor: '#00e5ff' } }} />}
         
         {files.length === 0 && !loading ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 10, opacity: 0.5 }}>
-                <Folder sx={{ fontSize: 80, color: 'rgba(255,255,255,0.1)' }} />
+                <Folder sx={{ fontSize: 80, color: 'text.disabled' }} />
                 <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>This folder is empty</Typography>
             </Box>
         ) : (
@@ -477,73 +598,173 @@ const FileManagement = () => {
                     <Grid container spacing={3}>
                         {filteredFiles.map((file) => {
                             const isSelected = selectedFiles.has(file.id)
+                            
+                            // Define the hover content
+                            const hoverContent = (
+                                <Box sx={{ p: 1 }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, wordBreak: 'break-all' }}>
+                                        {file.fileName}
+                                    </Typography>
+                                    <Grid container spacing={1}>
+                                        <Grid item xs={12}>
+                                            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                                                Type: {file.isFolder ? 'Folder' : file.mimeType?.split('/')[1] || 'Unknown'}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={6}>
+                                            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                                                Size: {formatSize(file.fileSize)}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={6}>
+                                            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                                                Date: {file.createdAt?.split('T')[0]}
+                                            </Typography>
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            )
+
                             return (
-                                <Grid item xs={6} sm={4} md={3} lg={2.4} xl={2} key={file.id}>
+                                <Grid item xs={12} sm={6} md={4} lg={3} xl={2.4} key={file.id}>
+                                    <Tooltip 
+                                        title={hoverContent} 
+                                        placement="top" 
+                                        arrow 
+                                        componentsProps={{
+                                            tooltip: {
+                                                sx: {
+                                                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(30,30,30,0.98)' : 'rgba(255,255,255,0.98)',
+                                                    color: 'text.primary',
+                                                    border: '1px solid',
+                                                    borderColor: 'divider',
+                                                    boxShadow: theme.shadows[8],
+                                                    maxWidth: 300
+                                                }
+                                            },
+                                            arrow: {
+                                                sx: {
+                                                    color: theme.palette.mode === 'dark' ? 'rgba(30,30,30,0.98)' : 'rgba(255,255,255,0.98)',
+                                                    '&::before': {
+                                                        border: '1px solid', 
+                                                        borderColor: 'divider'
+                                                    }
+                                                }
+                                            }
+                                        }}
+                                    >
                                     <GlassCard
                                         sx={{
                                             position: 'relative',
                                             cursor: 'pointer',
-                                            height: { xs: 200, sm: 240, md: 280 }, // Responsive height
-                                            border: isSelected ? '2px solid #2E86DE' : '1px solid rgba(255, 255, 255, 0.05)',
+                                            height: { xs: 100, sm: 110, md: 120 },
+                                            border: isSelected ? '2px solid #2E86DE' : '1px solid',
+                                            borderColor: isSelected ? '#2E86DE' : (theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0,0,0,0.05)'),
                                             boxShadow: isSelected ? '0 0 20px rgba(46, 134, 222, 0.3)' : 'none',
-                                            background: isSelected ? 'rgba(46, 134, 222, 0.05)' : 'rgba(255, 255, 255, 0.02)',
+                                            background: isSelected 
+                                                ? 'rgba(46, 134, 222, 0.05)' 
+                                                : (theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255,255,255,0.6)'),
+                                            display: 'flex', // Enable flex layout
+                                            flexDirection: 'row', // Horizontal layout
+                                            alignItems: 'center',
                                             '&:hover': {
-                                                transform: 'translateY(-8px)',
-                                                bgcolor: 'rgba(255,255,255,0.05)',
-                                                boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-                                                '& .file-actions': { opacity: 1 }
+                                                transform: 'translateY(-4px)',
+                                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)',
+                                                boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+                                                '& .file-actions': { opacity: 1 },
+                                                '& .checkbox-area': { opacity: 1 } // Show checkbox on hover
                                             }
                                         }}
-                                        onClick={() => handleFileClick(file)}
+                                        onClick={(e) => {
+                                           handleFileClick(file) 
+                                        }}
                                     >
                                         <Box 
-                                            sx={{ position: 'absolute', top: 12, left: 12, zIndex: 2 }}
+                                            className="checkbox-area"
+                                            sx={{ 
+                                                position: 'absolute', 
+                                                top: 8, 
+                                                left: 8, 
+                                                zIndex: 3,
+                                                opacity: isSelected ? 1 : 0, // Visible if selected or hovered
+                                                transition: 'opacity 0.2s'
+                                            }}
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <Checkbox 
                                                 checked={isSelected}
                                                 onChange={() => toggleSelection(file.id)}
                                                 size="small"
-                                                icon={<Box sx={{ width: 22, height: 22, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)' }} />}
-                                                checkedIcon={<CheckCircle sx={{ color: '#2E86DE', fontSize: 26 }} />}
+                                                icon={<Box sx={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid', borderColor: 'text.secondary' }} />}
+                                                checkedIcon={<CheckCircle sx={{ color: '#2E86DE', fontSize: 22 }} />}
                                             />
                                         </Box>
                                         
-                                        <Box className="file-actions" sx={{ position: 'absolute', top: 12, right: 12, opacity: 0, transition: 'opacity 0.2s', zIndex: 2 }}>
-                                            <IconButton size="small" sx={{ color: 'white', bgcolor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', '&:hover': { bgcolor: 'black' } }}>
+                                        <Box className="file-actions" sx={{ position: 'absolute', top: 8, right: 8, opacity: 0, transition: 'opacity 0.2s', zIndex: 3 }}>
+                                            <IconButton 
+                                                size="small" 
+                                                onClick={(e) => handleMenuClick(e, file)}
+                                                sx={{ color: 'white', bgcolor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', '&:hover': { bgcolor: 'black' } }}
+                                            >
                                                 <MoreVert fontSize="small" />
                                             </IconButton>
                                         </Box>
 
-                                        <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '65%' }}>
-                                            {getFileIcon(file)}
+                                        {/* Left Side: Icon */}
+                                        <Box sx={{ 
+                                            width: '100px', // Slightly reduced back to 100 to give text more room
+                                            height: '100%', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center', 
+                                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.02)',
+                                            flexShrink: 0
+                                        }}>
+                                            <Box sx={{ transform: 'scale(1.2)' }}> 
+                                                {getFileIcon(file)}
+                                            </Box>
                                         </Box>
                                         
-                                        <Box sx={{ p: 2, height: '35%', display: 'flex', flexDirection: 'column', justifyContent: 'center', bgcolor: 'rgba(0,0,0,0.1)' }}>
-                                            <Typography 
-                                                variant="subtitle1" 
-                                                title={file.fileName} 
-                                                sx={{ 
-                                                    color: 'white', 
-                                                    fontWeight: 600, 
-                                                    mb: 0.5,
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap',
-                                                    textAlign: 'center'
-                                                }}
-                                            >
-                                                {file.fileName}
-                                            </Typography>
-                                            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                                                {file.isFolder ? (
-                                                    file.createdAt?.split('T')[0]
-                                                ) : (
-                                                    `${formatSize(file.fileSize)} • ${file.createdAt?.split('T')[0]}`
-                                                )}
-                                            </Typography>
+                                        {/* Right Side: Info */}
+                                        <Box sx={{ 
+                                            flex: 1, 
+                                            p: 2, 
+                                            display: 'flex', 
+                                            flexDirection: 'column', 
+                                            justifyContent: 'center',
+                                            overflow: 'hidden',
+                                            minWidth: 0 // Crucial for text truncation in flex items
+                                        }}>
+                                             {/* Basic Info */}
+                                            <Box className="file-info" sx={{ width: '100%' }}>
+                                                <Typography 
+                                                    variant="subtitle1" 
+                                                    sx={{ 
+                                                        color: 'text.primary', 
+                                                        fontWeight: 600, 
+                                                        mb: 0.5,
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap',
+                                                        width: '100%'
+                                                    }}
+                                                >
+                                                    {file.fileName}
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                                                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                                                        {file.createdAt?.split('T')[0]}
+                                                    </Typography>
+                                                    {!file.isFolder && (
+                                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                                                            {formatSize(file.fileSize)}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            </Box>
                                         </Box>
                                     </GlassCard>
+                                    </Tooltip>
                                 </Grid>
                             )
                         })}
@@ -551,20 +772,20 @@ const FileManagement = () => {
                 ) : (
                     <TableContainer component={GlassCard} sx={{ borderRadius: 4 }}>
                         <Table>
-                            <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.2)' }}>
+                            <TableHead sx={{ bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)' }}>
                                 <TableRow>
                                     <TableCell padding="checkbox">
                                         <Checkbox 
                                             indeterminate={selectedFiles.size > 0 && selectedFiles.size < files.length}
                                             checked={files.length > 0 && selectedFiles.size === files.length}
                                             onChange={selectAll}
-                                            sx={{ color: 'rgba(255,255,255,0.3)', '&.Mui-checked': { color: '#00e5ff' } }}
+                                            sx={{ color: 'text.secondary', '&.Mui-checked': { color: '#00e5ff' } }}
                                         />
                                     </TableCell>
-                                    <TableCell sx={{ color: 'rgba(255,255,255,0.7)' }}>Name</TableCell>
-                                    <TableCell sx={{ color: 'rgba(255,255,255,0.7)' }}>Size</TableCell>
-                                    <TableCell sx={{ color: 'rgba(255,255,255,0.7)' }}>Date</TableCell>
-                                    <TableCell sx={{ color: 'rgba(255,255,255,0.7)' }} align="right">Actions</TableCell>
+                                    <TableCell sx={{ color: 'text.secondary' }}>Name</TableCell>
+                                    <TableCell sx={{ color: 'text.secondary' }}>Size</TableCell>
+                                    <TableCell sx={{ color: 'text.secondary' }}>Date</TableCell>
+                                    <TableCell sx={{ color: 'text.secondary' }} align="right">Actions</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -578,7 +799,7 @@ const FileManagement = () => {
                                             onClick={() => handleFileClick(file)}
                                             sx={{ 
                                                 cursor: 'pointer',
-                                                '&:hover': { bgcolor: 'rgba(255,255,255,0.05) !important' },
+                                                '&:hover': { bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05) !important' : 'rgba(0,0,0,0.02) !important' },
                                                 '&.Mui-selected': { bgcolor: 'rgba(0, 229, 255, 0.08) !important' }
                                             }}
                                         >
@@ -586,26 +807,26 @@ const FileManagement = () => {
                                                 <Checkbox 
                                                     checked={isSelected}
                                                     onChange={(e) => { e.stopPropagation(); toggleSelection(file.id); }}
-                                                    sx={{ color: 'rgba(255,255,255,0.3)', '&.Mui-checked': { color: '#00e5ff' } }}
+                                                    sx={{ color: 'text.secondary', '&.Mui-checked': { color: '#00e5ff' } }}
                                                 />
                                             </TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                                     {file.isFolder ? <Folder sx={{ color: '#FFD700' }} /> : <InsertDriveFile sx={{ color: '#00e5ff' }} />}
-                                                    <Typography sx={{ color: 'white' }}>{file.fileName}</Typography>
+                                                    <Typography sx={{ color: 'text.primary' }}>{file.fileName}</Typography>
                                                 </Box>
                                             </TableCell>
-                                            <TableCell sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                                            <TableCell sx={{ color: 'text.secondary' }}>
                                                 {file.isFolder ? '-' : formatSize(file.fileSize)}
                                             </TableCell>
-                                            <TableCell sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                                            <TableCell sx={{ color: 'text.secondary' }}>
                                                 {file.createdAt?.split('T')[0]}
                                             </TableCell>
                                             <TableCell align="right">
                                                 <IconButton 
                                                     size="small" 
-                                                    onClick={(e) => { e.stopPropagation(); /* Menu logic */ }}
-                                                    sx={{ color: 'rgba(255,255,255,0.5)' }}
+                                                    onClick={(e) => handleMenuClick(e, file)}
+                                                    sx={{ color: 'text.secondary' }}
                                                 >
                                                     <MoreVert fontSize="small" />
                                                 </IconButton>
@@ -621,21 +842,65 @@ const FileManagement = () => {
         )}
       </Box>
 
+      {/* --- CONTEXT MENU --- */}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+        onClick={(e) => e.stopPropagation()}
+        PaperProps={{
+            sx: {
+                minWidth: 180,
+                borderRadius: 3,
+                boxShadow: theme.shadows[8],
+                bgcolor: 'background.paper',
+                backgroundImage: 'none',
+                border: '1px solid',
+                borderColor: 'divider'
+            }
+        }}
+      >
+        <MenuItem onClick={handleShare}>
+            <ShareOutlined fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
+            <Typography variant="body2">Share</Typography>
+        </MenuItem>
+        <MenuItem onClick={handleDownload}>
+            <Download fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
+            <Typography variant="body2">Download</Typography>
+        </MenuItem>
+        {/* Placeholder for Rename */}
+        <MenuItem disabled>
+            <Edit fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
+            <Typography variant="body2">Rename</Typography>
+        </MenuItem>
+        <MenuItem onClick={() => { handleMenuClose(); /* Add logic */ }} sx={{ color: 'error.main' }}>
+            <DeleteOutline fontSize="small" sx={{ mr: 1.5 }} />
+            <Typography variant="body2">Delete</Typography>
+        </MenuItem>
+      </Menu>
+
+      <ShareDialog 
+        open={shareDialogOpen}
+        onClose={() => { setShareDialogOpen(false); setActiveFile(null); }}
+        file={activeFile}
+      />
+
       {/* --- DIALOGS --- */}
       <Dialog 
         open={createFolderDialog} 
         onClose={() => setCreateFolderDialog(false)}
         PaperProps={{
             style: {
-                backgroundColor: 'rgba(30,30,30,0.9)',
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(30,30,30,0.9)' : 'rgba(255,255,255,0.9)',
                 backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'white',
+                border: '1px solid',
+                borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                color: 'text.primary',
                 minWidth: '400px'
             }
         }}
       >
-        <DialogTitle>Create New Folder</DialogTitle>
+        <DialogTitle sx={{ color: 'text.primary' }}>Create New Folder</DialogTitle>
         <DialogContent>
             <TextField
                 autoFocus
@@ -646,18 +911,18 @@ const FileManagement = () => {
                 onChange={(e) => setFolderName(e.target.value)}
                 sx={{
                     mt: 1,
-                    '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+                    '& .MuiInputLabel-root': { color: 'text.secondary' },
                     '& .MuiOutlinedInput-root': {
-                        color: 'white',
-                        '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-                        '&:hover fieldset': { borderColor: 'white' },
+                        color: 'text.primary',
+                        '& fieldset': { borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.23)' },
+                        '&:hover fieldset': { borderColor: 'text.primary' },
                         '&.Mui-focused fieldset': { borderColor: '#00e5ff' }
                     }
                 }}
             />
         </DialogContent>
         <DialogActions>
-            <Button onClick={() => setCreateFolderDialog(false)} sx={{ color: 'rgba(255,255,255,0.7)' }}>Cancel</Button>
+            <Button onClick={() => setCreateFolderDialog(false)} sx={{ color: 'text.secondary' }}>Cancel</Button>
             <Button onClick={handleCreateFolder} variant="contained" sx={{ bgcolor: '#00e5ff', color: 'black', '&:hover': { bgcolor: '#00b8cc' } }}>Create</Button>
         </DialogActions>
       </Dialog>
@@ -715,7 +980,7 @@ const FileManagement = () => {
                  {previewFile && (
                     <Box sx={{ width: '100%', maxWidth: '1200px', aspectRatio: '16/9' }}>
                         <VideoPlayer 
-                            src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/files/${previewFile.id}/download?token=${localStorage.getItem('token')}`}
+                            src={`${import.meta.env.VITE_API_BASE_URL || ''}/api/files/${previewFile.id}/download?token=${localStorage.getItem('token')}`}
                             poster={null} // Or fetch a thumbnail if available
                         />
                     </Box>
@@ -727,7 +992,7 @@ const FileManagement = () => {
         open={docPreviewOpen}
         onClose={() => setDocPreviewOpen(false)}
         file={docFile}
-        downloadUrl={docFile ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/files/${docFile.id}/download?token=${localStorage.getItem('token')}` : ''}
+        downloadUrl={docFile ? `${import.meta.env.VITE_API_BASE_URL || ''}/api/files/${docFile.id}/download?token=${localStorage.getItem('token')}` : ''}
       />
     </Box>
     </ImagePreviewProvider>

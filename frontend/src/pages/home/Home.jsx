@@ -32,6 +32,7 @@ import {
   ChevronRight,
   Folder,
   CloudUploadOutlined,
+  SwapHoriz, // Changed icon
   Description,
   PlayCircleFilled,
   ShareOutlined,
@@ -55,7 +56,10 @@ import ThemeSwitcher from '../../components/ThemeSwitcher'
 import UploadDialog from '../../components/upload/UploadDialog'
 import UploadPopover from '../../components/upload/UploadPopover'
 import FileManagement from './FileManagement'
+import TransferList from '../transfer/TransferList'
+import ShareList from '../share/ShareList'
 import Placeholder from './Placeholder'
+import MediaCenter from '../media/MediaCenter'
 import './Home.css'
 
 const Home = () => {
@@ -75,6 +79,19 @@ const Home = () => {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab)
+  }
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/search?keyword=${encodeURIComponent(searchQuery.trim())}`)
+      setSearchQuery('')
+    }
+  }
+
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
   }
 
   const handleLogout = () => {
@@ -100,38 +117,12 @@ const Home = () => {
     switch (activeTab) {
       case 'files':
         return <FileManagement />
-      case 'sync':
-        return (
-          <Placeholder
-            title="同步备份"
-            icon={<CloudUploadOutlined />}
-            description="正在同步您的文件到云端备份服务..."
-          />
-        )
-      case 'download':
-        return (
-          <Placeholder
-            title="离线下载"
-            icon={<Description />}
-            description="支持多种格式的离线下载任务，让您的文件随时可用。"
-          />
-        )
+      case 'transfer':
+        return <TransferList />
       case 'media':
-        return (
-          <Placeholder
-            title="影音中心"
-            icon={<PlayCircleFilled />}
-            description="在线播放您的视频和音频文件，支持多种格式。"
-          />
-        )
+        return <MediaCenter />
       case 'share':
-        return (
-          <Placeholder
-            title="分享协同"
-            icon={<ShareOutlined />}
-            description="与团队成员协作编辑文件，实时同步更改。"
-          />
-        )
+        return <ShareList />
       case 'settings':
         return (
           <Placeholder
@@ -179,15 +170,16 @@ const Home = () => {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={handleSearchKeyPress}
               sx={{
                 width: 360,
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: theme.palette.action.hover,
-                  borderRadius: 20, // Fully rounded
+                  borderRadius: 20,
                   transition: 'all 0.3s ease',
                   border: '1px solid transparent',
                   pl: 2,
-                  '& fieldset': { border: 'none' }, // Remove default border
+                  '& fieldset': { border: 'none' },
                   '&:hover': {
                       backgroundColor: theme.palette.action.hover,
                   },
@@ -206,6 +198,17 @@ const Home = () => {
                 startAdornment: (
                   <InputAdornment position="start">
                     <SearchOutlined sx={{ color: theme.palette.text.secondary }} />
+                  </InputAdornment>
+                ),
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={handleSearch}
+                      sx={{ mr: -1 }}
+                    >
+                      <SearchOutlined sx={{ fontSize: '1rem', color: theme.palette.primary.main }} />
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}
@@ -273,16 +276,16 @@ const Home = () => {
         >
           <Box sx={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
             <List className="sidebar-menu" sx={{ flex: 1, padding: 0 }}>
-              {['files', 'sync', 'download', 'media', 'share', 'settings'].map((tab) => (
+              {['files', 'search', 'transfer', 'media', 'share', 'settings'].map((tab) => (
                 <ListItem key={tab} disablePadding sx={{ display: 'block', mb: 1 }}>
                   <ListItemButton
                     selected={activeTab === tab}
-                    onClick={() => handleTabChange(tab)}
+                    onClick={() => tab === 'search' ? navigate('/search') : handleTabChange(tab)}
                     sx={{
-                      minHeight: 52, // Taller buttons
+                      minHeight: 52,
                       justifyContent: sidebarOpen ? 'initial' : 'center',
                       px: 2,
-                      borderRadius: 4, // More rounded
+                      borderRadius: 4,
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       color: theme.palette.text.secondary,
                       '&:hover': {
@@ -291,15 +294,15 @@ const Home = () => {
                          transform: 'translateX(4px)',
                       },
                       '&.Mui-selected': {
-                        backgroundColor: theme.palette.action.selected + ' !important',
-                        backdropFilter: 'blur(10px)',
-                        color: theme.palette.text.primary,
-                        fontWeight: 600,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        '& .MuiListItemIcon-root': {
-                          color: theme.palette.primary.main,
-                        },
-                      },
+                         backgroundColor: theme.palette.action.selected + ' !important',
+                         backdropFilter: 'blur(10px)',
+                         color: theme.palette.text.primary,
+                         fontWeight: 600,
+                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                         '& .MuiListItemIcon-root': {
+                           color: theme.palette.primary.main,
+                         },
+                       },
                     }}
                   >
                     <ListItemIcon
@@ -311,16 +314,16 @@ const Home = () => {
                       }}
                     >
                       {tab === 'files' && <Folder fontSize={sidebarOpen ? "medium" : "large"} />}
-                      {tab === 'sync' && <CloudUploadOutlined fontSize={sidebarOpen ? "medium" : "large"} />}
-                      {tab === 'download' && <Description fontSize={sidebarOpen ? "medium" : "large"} />}
+                      {tab === 'search' && <SearchOutlined fontSize={sidebarOpen ? "medium" : "large"} />}
+                      {tab === 'transfer' && <SwapHoriz fontSize={sidebarOpen ? "medium" : "large"} />}
                       {tab === 'media' && <PlayCircleFilled fontSize={sidebarOpen ? "medium" : "large"} />}
                       {tab === 'share' && <ShareOutlined fontSize={sidebarOpen ? "medium" : "large"} />}
                       {tab === 'settings' && <SettingsOutlined fontSize={sidebarOpen ? "medium" : "large"} />}
                     </ListItemIcon>
                     {sidebarOpen && <ListItemText primary={
                         tab === 'files' ? 'Files' :
-                        tab === 'sync' ? 'Sync' :
-                        tab === 'download' ? 'Downloads' :
+                        tab === 'search' ? 'Search' :
+                        tab === 'transfer' ? 'Transfers' :
                         tab === 'media' ? 'Media' :
                         tab === 'share' ? 'Shared' :
                         'Settings'

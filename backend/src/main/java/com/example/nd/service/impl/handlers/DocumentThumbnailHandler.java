@@ -31,19 +31,14 @@ public class DocumentThumbnailHandler extends BaseTaskHandler {
             throw new RuntimeException("File not found");
         }
 
-        FileMetadata metadata = fileMetadataMapper.getFileMetadataById(file.getMetadataId());
-        if (metadata == null) {
-            throw new RuntimeException("File metadata not found");
-        }
-
-        String filePath = metadata.getStoragePath();
-        String mimeType = metadata.getMimeType();
+        String filePath = file.getStoragePath();
+        String mimeType = file.getMimeType();
 
         updateProgress(task, 5, "开始生成文档封面");
 
         try {
             Path sourcePath = Paths.get(filePath);
-            String thumbnailPath = metadata.getCoverPath();
+            String thumbnailPath = null;
             
             if (thumbnailPath == null || thumbnailPath.isEmpty()) {
                 thumbnailPath = Paths.get(sourcePath.getParent().toString(), 
@@ -70,10 +65,6 @@ public class DocumentThumbnailHandler extends BaseTaskHandler {
             }
             
             updateProgress(task, 100, "文档封面生成完成");
-            
-            // 更新文件元数据的封面路径
-            metadata.setCoverPath(thumbnailPath);
-            fileMetadataMapper.updateFileMetadata(metadata);
             
             // 创建封面生成结果数据
             long thumbnailSize = Files.size(thumbnailFilePath);

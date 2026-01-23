@@ -62,6 +62,25 @@ logging:
 
 server:
   port: 8080
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
+      file-size-threshold: 0
+
+webdav:
+  enabled: true
+  path: /webdav
+  max-file-size: 100MB
+  max-request-size: 100MB
+
+app:
+  storage:
+    base-path: ./storage
+    files-path: ./storage/files
+    temp-path: ./storage/temp
+    covers-path: ./storage/covers
 
 springdoc:
   api-docs:

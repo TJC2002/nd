@@ -85,12 +85,6 @@ public class RecycleBinServiceImpl implements RecycleBinService {
             throw new RuntimeException("文件不在回收站中");
         }
         
-        // 删除文件元数据
-        if (file.getMetadataId() != null) {
-            fileMetadataMapper.deleteFileMetadata(file.getMetadataId());
-        }
-        
-        // 永久删除文件记录
         fileMapper.deleteFilePermanently(fileId);
     }
 
@@ -99,11 +93,6 @@ public class RecycleBinServiceImpl implements RecycleBinService {
     public void deleteAllPermanently(Long userId) {
         List<File> deletedFiles = fileMapper.getDeletedFilesByUserId(userId);
         for (File file : deletedFiles) {
-            // 删除文件元数据
-            if (file.getMetadataId() != null) {
-                fileMetadataMapper.deleteFileMetadata(file.getMetadataId());
-            }
-            // 永久删除文件记录
             fileMapper.deleteFilePermanently(file.getId());
         }
     }
@@ -132,16 +121,10 @@ public class RecycleBinServiceImpl implements RecycleBinService {
         fileInfo.setUpdatedAt(file.getUpdatedAt());
         fileInfo.setDeletedAt(file.getDeletedAt());
         
-        // 获取文件元数据
-        if (file.getMetadataId() != null) {
-            FileMetadata metadata = fileMetadataMapper.getFileMetadataById(file.getMetadataId());
-            if (metadata != null) {
-                fileInfo.setFileSize(metadata.getSize());
-                fileInfo.setMimeType(metadata.getMimeType());
-                fileInfo.setFileHash(metadata.getHashValue());
-                fileInfo.setStoragePath(metadata.getStoragePath());
-            }
-        }
+        fileInfo.setFileSize(file.getSize());
+        fileInfo.setMimeType(file.getMimeType());
+        fileInfo.setFileHash(file.getHashValue());
+        fileInfo.setStoragePath(file.getStoragePath());
         
         return fileInfo;
     }

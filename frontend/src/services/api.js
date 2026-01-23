@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -95,6 +95,50 @@ export const fileApi = {
   createFolder: (folderName, parentFolderId) => {
     return api.post('/files/folders', { folderName, parentFolderId })
   },
+
+  searchFiles: (params) => {
+    return api.get('/files/search', { params })
+  },
+}
+
+export const shareApi = {
+  // Create a share link
+  createShare: (data) => {
+    return api.post('/shares', data)
+  },
+
+  // Get user's share records
+  getShares: () => {
+    return api.get('/shares')
+  },
+
+  // Verify share link (Public)
+  verifyShare: (shareCode) => {
+    return api.get(`/shares/${shareCode}`)
+  },
+
+  // Access shared file (verify password if needed)
+  accessShare: (shareCode, password) => {
+    return api.post(`/shares/${shareCode}/access`, { password })
+  },
+
+  // Download shared file
+  downloadShare: (shareCode, password) => {
+    return api.get(`/shares/${shareCode}/download`, {
+      params: { password },
+      responseType: 'blob'
+    })
+  },
+
+  // Revoke share
+  revokeShare: (shareId) => {
+    return api.delete(`/shares/${shareId}`)
+  },
+
+  // Get share statistics
+  getShareStats: () => {
+    return api.get('/shares/stats')
+  }
 }
 
 export const storageApi = {

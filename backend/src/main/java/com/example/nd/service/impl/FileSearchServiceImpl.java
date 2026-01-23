@@ -46,16 +46,10 @@ public class FileSearchServiceImpl implements FileSearchService {
         result.setCreatedAt(file.getCreatedAt() != null ? file.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : null);
         result.setUpdatedAt(file.getUpdatedAt() != null ? file.getUpdatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : null);
         
-        if (file.getMetadataId() != null) {
-            FileMetadata metadata = fileMetadataMapper.getFileMetadataById(file.getMetadataId());
-            if (metadata != null) {
-                result.setFileSize(metadata.getSize());
-                result.setMimeType(metadata.getMimeType());
-                result.setFileHash(metadata.getHashValue());
-                result.setStoragePath(metadata.getStoragePath());
-                result.setCoverPath(metadata.getCoverPath());
-            }
-        }
+        result.setFileSize(file.getSize());
+        result.setMimeType(file.getMimeType());
+        result.setFileHash(file.getHashValue());
+        result.setStoragePath(file.getStoragePath());
         
         return result;
     }

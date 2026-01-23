@@ -183,6 +183,9 @@ public class FileServiceImpl implements FileService {
         fileInfo.setParentFolderId(file.getParentId());
         fileInfo.setFileName(file.getName());
         fileInfo.setOriginalName(file.getName());
+        fileInfo.setFileSize(file.getSize());
+        fileInfo.setMimeType(file.getMimeType());
+        fileInfo.setStoragePath(file.getStoragePath());
         fileInfo.setCreatedAt(file.getCreatedAt());
         fileInfo.setUpdatedAt(file.getUpdatedAt());
         fileInfo.setDeletedAt(file.getDeletedAt());

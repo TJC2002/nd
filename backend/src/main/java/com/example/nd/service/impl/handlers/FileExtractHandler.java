@@ -32,16 +32,11 @@ public class FileExtractHandler extends BaseTaskHandler {
             throw new RuntimeException("File not found");
         }
 
-        FileMetadata metadata = fileMetadataMapper.getFileMetadataById(file.getMetadataId());
-        if (metadata == null) {
-            throw new RuntimeException("File metadata not found");
-        }
-
-        String filePath = metadata.getStoragePath();
-        if (!"application/zip".equals(metadata.getMimeType()) && 
-            !"application/x-rar-compressed".equals(metadata.getMimeType()) && 
-            !"application/x-7z-compressed".equals(metadata.getMimeType()) &&
-            !"application/x-tar".equals(metadata.getMimeType())) {
+        String filePath = file.getStoragePath();
+        if (!"application/zip".equals(file.getMimeType()) && 
+            !"application/x-rar-compressed".equals(file.getMimeType()) && 
+            !"application/x-7z-compressed".equals(file.getMimeType()) &&
+            !"application/x-tar".equals(file.getMimeType())) {
             throw new RuntimeException("Unsupported file type for extraction");
         }
 
@@ -57,15 +52,15 @@ public class FileExtractHandler extends BaseTaskHandler {
         updateProgress(task, 5, "开始解压文件");
 
         try {
-            if ("application/zip".equals(metadata.getMimeType())) {
+            if ("application/zip".equals(file.getMimeType())) {
                 extractZip(sourcePath, targetDir, task);
-            } else if ("application/x-rar-compressed".equals(metadata.getMimeType())) {
+            } else if ("application/x-rar-compressed".equals(file.getMimeType())) {
                 // RAR解压需要额外库，这里简化处理
                 throw new RuntimeException("RAR extraction requires additional libraries");
-            } else if ("application/x-7z-compressed".equals(metadata.getMimeType())) {
+            } else if ("application/x-7z-compressed".equals(file.getMimeType())) {
                 // 7Z解压需要额外库，这里简化处理
                 throw new RuntimeException("7Z extraction requires additional libraries");
-            } else if ("application/x-tar".equals(metadata.getMimeType())) {
+            } else if ("application/x-tar".equals(file.getMimeType())) {
                 extractTar(sourcePath, targetDir, task);
             }
 

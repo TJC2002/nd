@@ -30,13 +30,8 @@ public class VideoThumbnailHandler extends BaseTaskHandler {
             throw new RuntimeException("File not found");
         }
 
-        FileMetadata metadata = fileMetadataMapper.getFileMetadataById(file.getMetadataId());
-        if (metadata == null) {
-            throw new RuntimeException("File metadata not found");
-        }
-
-        String filePath = metadata.getStoragePath();
-        if (!metadata.getMimeType().startsWith("video/")) {
+        String filePath = file.getStoragePath();
+        if (!file.getMimeType().startsWith("video/")) {
             throw new RuntimeException("Unsupported file type for video thumbnail extraction");
         }
 
@@ -44,10 +39,9 @@ public class VideoThumbnailHandler extends BaseTaskHandler {
 
         try {
             Path sourcePath = Paths.get(filePath);
-            String thumbnailPath = metadata.getCoverPath();
+            String thumbnailPath = null;
             
             if (thumbnailPath == null || thumbnailPath.isEmpty()) {
-                // 如果没有封面路径，生成默认封面路径
                 thumbnailPath = Paths.get(sourcePath.getParent().toString(), 
                     file.getName().substring(0, file.getName().lastIndexOf('.')) + "_thumbnail.jpg").toString();
             }
@@ -81,10 +75,6 @@ public class VideoThumbnailHandler extends BaseTaskHandler {
             }
             
             updateProgress(task, 100, "视频封面提取完成");
-            
-            // 更新文件元数据的封面路径
-            metadata.setCoverPath(thumbnailPath);
-            fileMetadataMapper.updateFileMetadata(metadata);
             
             // 创建封面提取结果数据
             long thumbnailSize = Files.size(thumbnailFilePath);

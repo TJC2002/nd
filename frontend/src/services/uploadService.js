@@ -1,10 +1,25 @@
 import SparkMD5 from 'spark-md5'
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 const CHUNK_SIZE = 4 * 1024 * 1024
 const CONCURRENT_UPLOADS = 3
+
+const api = axios.create()
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.satoken = token
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
 
 class UploadService {
   constructor() {
@@ -44,7 +59,7 @@ class UploadService {
 
   async checkFileExist(hash, fileName, fileSize, fileType) {
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/files/check`, {
+      const response = await api.post(`${API_BASE_URL}/api/files/check`, {
         hash,
         name: fileName,
         size: fileSize,
@@ -59,7 +74,7 @@ class UploadService {
 
   async initializeUpload(fileInfo, chunkSize, totalChunks, parentFolderId) {
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/files/upload/init`, {
+      const response = await api.post(`${API_BASE_URL}/api/files/upload/init`, {
         name: fileInfo.name,
         size: fileInfo.size,
         type: fileInfo.type,
@@ -85,7 +100,7 @@ class UploadService {
     this.abortControllers.set(`${uploadId}-${chunkIndex}`, controller)
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/files/upload/chunk`, formData, {
+      const response = await api.post(`${API_BASE_URL}/api/files/upload/chunk`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -96,7 +111,7 @@ class UploadService {
           }
         },
         signal: controller.signal,
-      })
+        })
       return response.data
     } catch (error) {
       if (axios.isCancel(error)) {
@@ -112,12 +127,12 @@ class UploadService {
 
   async completeUpload(uploadId, fileName, hash) {
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/files/upload/complete`, {
+      const response = await api.post(`${API_BASE_URL}/api/files/upload/complete`, {
         uploadId,
         fileName,
         hash,
       })
-      return response.data
+      return response
     } catch (error) {
       console.error('完成上传失败:', error)
       throw error
@@ -126,7 +141,7 @@ class UploadService {
 
   async getUploadStatus(uploadId) {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/files/upload/status/${uploadId}`)
+      const response = await api.get(`${API_BASE_URL}/api/files/upload/status/${uploadId}`)
       return response.data
     } catch (error) {
       console.error('获取上传状态失败:', error)
@@ -136,7 +151,7 @@ class UploadService {
 
   async cancelUpload(uploadId) {
     try {
-      await axios.post(`${API_BASE_URL}/api/files/upload/cancel/${uploadId}`)
+      await api.post(`${API_BASE_URL}/api/files/upload/cancel/${uploadId}`)
     } catch (error) {
       console.error('取消上传失败:', error)
       throw error
@@ -189,7 +204,7 @@ class UploadService {
       onProgress({ status: 'initializing', progress: 20, speed: 0 })
 
       const initResult = await this.initializeUpload(fileInfo, chunkSize, totalChunks, parentFolderId)
-      const uploadId = initResult.uploadId
+      const uploadId = initResult.data.uploadId
 
       onProgress({ status: 'uploading', progress: 20, speed: 0 })
 
@@ -250,7 +265,7 @@ class UploadService {
 
       return {
         taskId,
-        fileId: completeResult.fileId,
+        fileId: completeResult.data.fileId,
         fileName: file.name,
         fileSize: file.size,
         status: 'completed',
