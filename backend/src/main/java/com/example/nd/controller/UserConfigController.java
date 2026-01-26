@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/user-configs")
+@RequestMapping("/user-configs")
 @Tag(name = "用户配置管理", description = "用户个性化配置相关接口")
 public class UserConfigController {
 

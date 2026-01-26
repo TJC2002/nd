@@ -59,12 +59,20 @@ class UploadService {
 
   async checkFileExist(hash, fileName, fileSize, fileType) {
     try {
+      console.log('=== 检查文件是否存在 ===')
+      console.log('文件哈希:', hash)
+      console.log('文件名:', fileName)
+      console.log('文件大小:', fileSize, 'bytes', `(${(fileSize / 1024 / 1024).toFixed(2)} MB)`)
+      console.log('文件类型:', fileType)
+      console.log('=====================')
+      
       const response = await api.post(`${API_BASE_URL}/api/files/check`, {
         hash,
         name: fileName,
         size: fileSize,
         type: fileType,
       })
+      console.log('检查文件是否存在响应:', response.data)
       return response.data
     } catch (error) {
       console.error('检查文件是否存在失败:', error)
@@ -74,6 +82,16 @@ class UploadService {
 
   async initializeUpload(fileInfo, chunkSize, totalChunks, parentFolderId) {
     try {
+      console.log('=== 初始化上传 ===')
+      console.log('文件名:', fileInfo.name)
+      console.log('文件大小:', fileInfo.size, 'bytes', `(${(fileInfo.size / 1024 / 1024).toFixed(2)} MB)`)
+      console.log('文件类型:', fileInfo.type)
+      console.log('文件哈希:', fileInfo.hash)
+      console.log('分片大小:', chunkSize, 'bytes', `(${(chunkSize / 1024 / 1024).toFixed(2)} MB)`)
+      console.log('分片数量:', totalChunks)
+      console.log('父文件夹ID:', parentFolderId)
+      console.log('==================')
+      
       const response = await api.post(`${API_BASE_URL}/api/files/upload/init`, {
         name: fileInfo.name,
         size: fileInfo.size,
@@ -83,6 +101,7 @@ class UploadService {
         totalChunks,
         parentFolderId,
       })
+      console.log('初始化上传响应:', response.data)
       return response.data
     } catch (error) {
       console.error('初始化上传失败:', error)
@@ -91,6 +110,14 @@ class UploadService {
   }
 
   async uploadChunk(uploadId, chunkIndex, chunkData, onProgress) {
+    console.log('=== 前端发送分片 ===')
+    console.log('uploadId:', uploadId)
+    console.log('chunkIndex:', chunkIndex)
+    console.log('chunkData大小:', chunkData.size, 'bytes', `(${(chunkData.size / 1024 / 1024).toFixed(2)} MB)`)
+    console.log('chunkData类型:', chunkData.type)
+    console.log('chunkData名称:', chunkData.name)
+    console.log('==================')
+    
     const formData = new FormData()
     formData.append('uploadId', uploadId)
     formData.append('chunkIndex', chunkIndex)
@@ -170,6 +197,27 @@ class UploadService {
     const taskId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const chunkSize = CHUNK_SIZE
     const totalChunks = Math.ceil(file.size / chunkSize)
+    
+    // 打印分片规则
+    console.log('=== 上传分片规则 ===')
+    console.log('文件大小:', file.size, 'bytes', `(${(file.size / 1024 / 1024).toFixed(2)} MB)`)
+    console.log('分片大小:', chunkSize, 'bytes', `(${(chunkSize / 1024 / 1024).toFixed(2)} MB)`)
+    console.log('分片数量:', totalChunks)
+    console.log('每个分片大小计算:', `Math.ceil(${file.size} / ${chunkSize}) = ${totalChunks}`)
+    console.log('文件名:', file.name)
+    console.log('文件类型:', file.type)
+    console.log('==================')
+    
+    // 计算每个分片的具体大小
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * chunkSize
+      const end = Math.min(start + chunkSize, file.size)
+      const actualChunkSize = end - start
+      console.log(`分片 ${i}: ${start}-${end} (${actualChunkSize} bytes, ${(actualChunkSize / 1024 / 1024).toFixed(2)} MB)`)
+    }
+    
+    console.log('开始上传流程...')
+    console.log('taskId:', taskId)
 
     const fileInfo = {
       name: file.name,

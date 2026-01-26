@@ -1,6 +1,15 @@
 spring:
   application:
     name: nd
+  servlet:
+    multipart:
+      max-file-size: 2048MB
+      max-request-size: 2048MB
+      enabled: true
+      file-size-threshold: 0
+      # 显式配置以覆盖默认值
+      resolve-lazily: false
+
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -62,12 +71,6 @@ logging:
 
 server:
   port: 8080
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
-      enabled: true
-      file-size-threshold: 0
 
 webdav:
   enabled: true

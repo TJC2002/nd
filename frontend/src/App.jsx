@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ThemeProvider as MuiThemeProvider, CssBaseline, Snackbar, Alert } from '@mui/material'
 import Login from './pages/login/Login'
 import Home from './pages/home/Home'
@@ -13,6 +13,7 @@ import ComicLibrary from './pages/media/ComicLibrary'
 import SearchPage from './pages/search/SearchPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import MusicDrawer from './components/music/MusicDrawer'
+import MusicMiniPlayer from './components/music/MusicMiniPlayer'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider as CustomThemeProvider } from './context/ThemeContext'
 import { NotificationProvider, useNotification } from './context/NotificationContext'
@@ -33,8 +34,8 @@ function App() {
                     <BrowserRouter>
                       <Routes>
                         <Route path="/login" element={<Login />} />
-                        <Route 
-                          path="/" 
+                        <Route
+                          path="/"
                           element={
                             <ProtectedRoute>
                               <UploadProvider>
@@ -42,67 +43,123 @@ function App() {
                                 <MusicDrawer />
                               </UploadProvider>
                             </ProtectedRoute>
-                          } 
+                          }
                         />
-                        <Route 
-                          path="/search" 
+                        <Route
+                          path="/home/files"
+                          element={
+                            <ProtectedRoute>
+                              <UploadProvider>
+                                <Home />
+                                <MusicDrawer />
+                              </UploadProvider>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/home/transfers"
+                          element={
+                            <ProtectedRoute>
+                              <UploadProvider>
+                                <Home />
+                                <MusicDrawer />
+                              </UploadProvider>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/home/media"
+                          element={
+                            <ProtectedRoute>
+                              <UploadProvider>
+                                <Home />
+                                <MusicDrawer />
+                              </UploadProvider>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/home/shares"
+                          element={
+                            <ProtectedRoute>
+                              <UploadProvider>
+                                <Home />
+                                <MusicDrawer />
+                              </UploadProvider>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/home/settings"
+                          element={
+                            <ProtectedRoute>
+                              <UploadProvider>
+                                <Home />
+                                <MusicDrawer />
+                              </UploadProvider>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/search"
                           element={
                             <ProtectedRoute>
                               <SearchPage />
                             </ProtectedRoute>
-                          } 
+                          }
                         />
-                        <Route 
-                          path="/music" 
+                        <Route
+                          path="/music"
                           element={
                             <ProtectedRoute>
                               <MusicPage />
                             </ProtectedRoute>
-                          } 
+                          }
                         />
-                        <Route 
-                          path="/media/video" 
+                        <Route
+                          path="/media/video"
                           element={
                             <ProtectedRoute>
                               <div style={{ padding: '80px 20px 20px 100px' }}>
                                 <VideoLibrary />
                               </div>
                             </ProtectedRoute>
-                          } 
+                          }
                         />
-                        <Route 
-                          path="/media/music" 
+                        <Route
+                          path="/media/music"
                           element={
                             <ProtectedRoute>
-                              <div style={{ padding: '80px 20px 20px 100px' }}>
-                                <MusicLibrary />
-                              </div>
+                              <UploadProvider>
+                                <Home />
+                              </UploadProvider>
                             </ProtectedRoute>
-                          } 
+                          }
                         />
-                        <Route 
-                          path="/media/comics" 
+                        <Route
+                          path="/media/comics"
                           element={
                             <ProtectedRoute>
                               <div style={{ padding: '80px 20px 20px 100px' }}>
                                 <ComicLibrary />
                               </div>
                             </ProtectedRoute>
-                          } 
+                          }
                         />
-                        <Route 
-                          path="/media/*" 
+                        <Route
+                          path="/media/*"
                           element={
                             <ProtectedRoute>
                               <div style={{ padding: '80px 20px 20px 100px' }}>
                                 <ComingSoon />
                               </div>
                             </ProtectedRoute>
-                          } 
+                          }
                         />
                         <Route path="/test-video" element={<VideoTestPage />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
+                      <MusicMiniPlayer />
                     </BrowserRouter>
                     <GlobalNotification notificationContext={notificationContext} />
                   </MusicProvider>

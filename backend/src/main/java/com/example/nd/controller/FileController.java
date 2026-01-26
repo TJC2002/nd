@@ -198,6 +198,16 @@ public class FileController {
             @RequestParam("uploadId") String uploadId,
             @RequestParam("chunkIndex") Integer chunkIndex,
             @RequestParam("chunkData") MultipartFile chunkData) {
+        // 打印分片信息用于调试
+        System.out.println("=== 后端接收分片信息 ===");
+        System.out.println("Upload ID: " + uploadId);
+        System.out.println("Chunk Index: " + chunkIndex);
+        System.out.println("Chunk Size: " + chunkData.getSize() + " bytes (" + 
+                          (chunkData.getSize() / 1024.0 / 1024.0) + " MB)");
+        System.out.println("Chunk Name: " + chunkData.getOriginalFilename());
+        System.out.println("Content Type: " + chunkData.getContentType());
+        System.out.println("=====================");
+        
         uploadService.uploadChunk(uploadId, chunkIndex, chunkData);
         return ApiResponse.success("Chunk uploaded successfully");
     }

@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -70,6 +70,7 @@ const Home = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const navigate = useNavigate()
+  const location = useLocation()
   const [activeTab, setActiveTab] = useState('files')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -77,8 +78,47 @@ const Home = () => {
   const [anchorEl, setAnchorEl] = useState(null)
   const [uploadAnchorEl, setUploadAnchorEl] = useState(null)
 
+  useEffect(() => {
+    const path = location.pathname
+    if (path === '/' || path === '/home/files') {
+      setActiveTab('files')
+    } else if (path === '/search') {
+      setActiveTab('search')
+    } else if (path === '/home/transfers') {
+      setActiveTab('transfer')
+    } else if (path === '/home/media') {
+      setActiveTab('media')
+    } else if (path === '/home/shares') {
+      setActiveTab('share')
+    } else if (path === '/home/settings') {
+      setActiveTab('settings')
+    }
+  }, [location.pathname])
+
   const handleTabChange = (tab) => {
     setActiveTab(tab)
+    switch (tab) {
+      case 'files':
+        navigate('/home/files')
+        break
+      case 'search':
+        navigate('/search')
+        break
+      case 'transfer':
+        navigate('/home/transfers')
+        break
+      case 'media':
+        navigate('/home/media')
+        break
+      case 'share':
+        navigate('/home/shares')
+        break
+      case 'settings':
+        navigate('/home/settings')
+        break
+      default:
+        break
+    }
   }
 
   const handleSearch = () => {
@@ -280,7 +320,7 @@ const Home = () => {
                 <ListItem key={tab} disablePadding sx={{ display: 'block', mb: 1 }}>
                   <ListItemButton
                     selected={activeTab === tab}
-                    onClick={() => tab === 'search' ? navigate('/search') : handleTabChange(tab)}
+                    onClick={() => handleTabChange(tab)}
                     sx={{
                       minHeight: 52,
                       justifyContent: sidebarOpen ? 'initial' : 'center',

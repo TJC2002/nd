@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/shares")
+@RequestMapping("/shares")
 @Tag(name = "分享管理", description = "文件分享相关接口")
 public class ShareController {
 

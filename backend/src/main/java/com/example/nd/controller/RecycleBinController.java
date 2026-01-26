@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/recycle-bin")
+@RequestMapping("/recycle-bin")
 @Tag(name = "回收站管理", description = "回收站相关接口")
 public class RecycleBinController {
 

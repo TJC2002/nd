@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/collections")
+@RequestMapping("/collections")
 @Tag(name = "集合管理", description = "文件集合管理相关接口")
 public class CollectionController {
 

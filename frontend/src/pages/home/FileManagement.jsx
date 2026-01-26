@@ -71,8 +71,9 @@ import './FileManagement.css' // Ensure this file exists or styles are inline
 
 // --- Helper Components & Styles ---
 
-const GlassCard = ({ children, sx, ...props }) => (
+const GlassCard = React.forwardRef(({ children, sx, ...props }, ref) => (
   <Paper
+    ref={ref}
     elevation={0}
     sx={{
       background: theme => theme.palette.mode === 'dark' 
@@ -92,7 +93,7 @@ const GlassCard = ({ children, sx, ...props }) => (
   >
     {children}
   </Paper>
-)
+))
 
 import { useTheme } from '@mui/material/styles'
 
@@ -349,7 +350,9 @@ const FileManagement = () => {
         return (
             <div onClick={(e) => e.stopPropagation()}>
                 <PreviewImage src={downloadUrl} alt={file.fileName}>
-                    <FcImageFile size={size} style={{ cursor: 'zoom-in' }} />
+                    <div>
+                        <FcImageFile size={size} style={{ cursor: 'zoom-in' }} />
+                    </div>
                 </PreviewImage>
             </div>
         );
