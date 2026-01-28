@@ -9,5 +9,7 @@ public class UpdateStorageNodeRequest {
     private String nodeName;
     private String storageType;
     private String storagePath;
+    private String connectionConfig;
     private Long capacity;
+    private String status;
 }

@@ -21,11 +21,12 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     @Transactional
-    public StorageNode createNode(String nodeName, String storageType, String storagePath, Long capacity) {
+    public StorageNode createNode(String nodeName, String storageType, String storagePath, String connectionConfig, Long capacity) {
         StorageNode node = new StorageNode();
         node.setNodeName(nodeName);
         node.setStorageType(storageType);
         node.setStoragePath(storagePath);
+        node.setConnectionConfig(connectionConfig);
         node.setCapacity(capacity != null ? DEFAULT_NODE_CAPACITY : capacity);
         node.setUsedSpace(0L);
         node.setStatus("active");

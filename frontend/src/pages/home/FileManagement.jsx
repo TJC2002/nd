@@ -59,10 +59,15 @@ import {
   Download,
   ArrowUpward,
   ArrowDownward,
+  QueueMusic,
+  PlaylistAdd,
+  SkipNext,
+  SkipPrevious,
 } from '@mui/icons-material'
 import { FcFolder, FcImageFile, FcAudioFile, FcVideoFile, FcDocument, FcFile } from 'react-icons/fc'
 import { fileApi } from '../../services/api'
 import { useUpload } from '../../context/UploadContext'
+import { useMusic } from '../../context/MusicContext'
 import VideoPlayer from '../../components/player/VideoPlayer' // Import VideoPlayer
 import DocumentPreview from '../../components/preview/DocumentPreview'
 import { ImagePreviewProvider, PreviewImage } from '../../components/preview/ImagePreview'
@@ -103,6 +108,7 @@ const FileManagement = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { setDialogOpen, setCurrentFolder } = useUpload()
+  const { playSong, handleNext, handlePrev, setPlaylist } = useMusic()
 
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
@@ -307,6 +313,37 @@ const FileManagement = () => {
     setActiveFile(file)
   }
 
+  const handleAudioPlay = (file) => {
+    const song = {
+      id: file.id,
+      title: file.fileName,
+      artist: file.fileName, // 可以根据实际情况调整
+      url: `${import.meta.env.VITE_API_BASE_URL || ''}/api/files/${file.id}/download?token=${localStorage.getItem('token')}`,
+      cover: null, // 可以根据实际情况添加封面
+      duration: 0 // 可以根据实际情况获取时长
+    }
+    playSong(song)
+  }
+
+  const handleAddToPlaylist = (file) => {
+    const song = {
+      id: file.id,
+      title: file.fileName,
+      artist: file.fileName,
+      url: `${import.meta.env.VITE_API_BASE_URL || ''}/api/files/${file.id}/download?token=${localStorage.getItem('token')}`,
+      cover: null,
+      duration: 0
+    }
+    // Add to playlist without playing immediately
+    setPlaylist(prev => {
+      if (!prev.find(s => s.id === song.id)) {
+        return [...prev, song]
+      }
+      return prev
+    })
+    showSnackbar('Added to playlist')
+  }
+
   const handleMenuClose = () => {
     setMenuAnchorEl(null)
     setActiveFile(null)
@@ -336,7 +373,7 @@ const FileManagement = () => {
 
   // --- Render Helpers ---
 
-  const getFileIcon = (file) => {
+const getFileIcon = (file) => {
     const size = 64;
     const downloadUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/api/files/${file.id}/download?token=${localStorage.getItem('token')}`;
     
@@ -357,7 +394,32 @@ const FileManagement = () => {
             </div>
         );
     } else if (mime.includes('audio')) {
-        return <FcAudioFile size={size} />;
+        return (
+            <Box 
+                sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    '&:hover': {
+                        transform: 'scale(1.1)',
+                        transition: 'transform 0.2s'
+                    }
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    handleAudioPlay(file);
+                }}
+                onMouseEnter={(e) => {
+                    e.target.style.cursor = 'pointer';
+                }}
+                onMouseLeave={(e) => {
+                    e.target.style.cursor = 'default';
+                }}
+            >
+                <FcAudioFile size={size} />
+            </Box>
+        );
     } else if (mime.includes('video')) {
         return <FcVideoFile size={size} />;
     } else if (mime.includes('pdf')) {
@@ -365,7 +427,7 @@ const FileManagement = () => {
     } else {
         return <FcFile size={size} />;
     }
-  }
+}
 
   const formatSize = (bytes) => {
     if (!bytes && bytes !== 0) return '--'
@@ -815,7 +877,31 @@ const FileManagement = () => {
                                             </TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                    {file.isFolder ? <Folder sx={{ color: '#FFD700' }} /> : <InsertDriveFile sx={{ color: '#00e5ff' }} />}
+                                                    {file.isFolder ? 
+                                                        <Folder sx={{ color: '#FFD700' }} /> : 
+                                                        file.mimeType?.startsWith('audio/') ? (
+                                                            <Box 
+                                                                sx={{ 
+                                                                    display: 'flex', 
+                                                                    alignItems: 'center', 
+                                                                    justifyContent: 'center',
+                                                                    cursor: 'pointer',
+                                                                    '&:hover': {
+                                                                        transform: 'scale(1.1)',
+                                                                        transition: 'transform 0.2s'
+                                                                    }
+                                                                }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleAudioPlay(file);
+                                                                }}
+                                                            >
+                                                                <FcAudioFile />
+                                                            </Box>
+                                                        ) : (
+                                                            <InsertDriveFile sx={{ color: '#00e5ff' }} />
+                                                        )
+                                                    }
                                                     <Typography sx={{ color: 'text.primary' }}>{file.fileName}</Typography>
                                                 </Box>
                                             </TableCell>
@@ -863,6 +949,27 @@ const FileManagement = () => {
             }
         }}
       >
+        {activeFile && activeFile.mimeType?.startsWith('audio/') && (
+          <>
+            <MenuItem onClick={() => { handleAudioPlay(activeFile); handleMenuClose(); }}>
+              <PlayCircleFilled fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
+              <Typography variant="body2">Play</Typography>
+            </MenuItem>
+            <MenuItem onClick={() => { handleAudioPlay(activeFile); handleNext(); handleMenuClose(); }}>
+              <SkipNext fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
+              <Typography variant="body2">Play Next</Typography>
+            </MenuItem>
+            <MenuItem onClick={() => { handleAudioPlay(activeFile); handlePrev(); handleMenuClose(); }}>
+              <SkipPrevious fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
+              <Typography variant="body2">Play Previous</Typography>
+            </MenuItem>
+            <MenuItem onClick={() => { handleAddToPlaylist(activeFile); handleMenuClose(); }}>
+              <PlaylistAdd fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
+              <Typography variant="body2">Add to Playlist</Typography>
+            </MenuItem>
+            <Box sx={{ my: 1, borderTop: '1px solid', borderColor: 'divider' }} />
+          </>
+        )}
         <MenuItem onClick={handleShare}>
             <ShareOutlined fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
             <Typography variant="body2">Share</Typography>

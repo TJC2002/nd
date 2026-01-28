@@ -11,13 +11,13 @@
     </select>
     
     <insert id="insertNode" parameterType="com.example.nd.model.StorageNode" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO storage_nodes (node_name, storage_type, storage_path, capacity, used_space, status, created_at, updated_at)
-        VALUES (#{nodeName}, #{storageType}, #{storagePath}, #{capacity}, #{usedSpace}, #{status}, NOW(), NOW())
+        INSERT INTO storage_nodes (node_name, storage_type, storage_path, connection_config, capacity, used_space, status, created_at, updated_at)
+        VALUES (#{nodeName}, #{storageType}, #{storagePath}, #{connectionConfig}, #{capacity}, #{usedSpace}, #{status}, NOW(), NOW())
     </insert>
     
     <update id="updateNode" parameterType="com.example.nd.model.StorageNode">
         UPDATE storage_nodes
-        SET node_name = #{nodeName}, storage_type = #{storageType}, storage_path = #{storagePath}, capacity = #{capacity}, used_space = #{usedSpace}, status = #{status}, updated_at = NOW()
+        SET node_name = #{nodeName}, storage_type = #{storageType}, storage_path = #{storagePath}, connection_config = #{connectionConfig}, capacity = #{capacity}, used_space = #{usedSpace}, status = #{status}, updated_at = NOW()
         WHERE id = #{id}
     </update>
     

@@ -11,6 +11,7 @@ import MusicLibrary from './pages/media/MusicLibrary'
 import ComingSoon from './pages/media/ComingSoon'
 import ComicLibrary from './pages/media/ComicLibrary'
 import SearchPage from './pages/search/SearchPage'
+import SettingsPage from './pages/settings/SettingsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import MusicDrawer from './components/music/MusicDrawer'
 import MusicMiniPlayer from './components/music/MusicMiniPlayer'
@@ -152,6 +153,16 @@ function App() {
                             <ProtectedRoute>
                               <div style={{ padding: '80px 20px 20px 100px' }}>
                                 <ComingSoon />
+                              </div>
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/settings"
+                          element={
+                            <ProtectedRoute>
+                              <div style={{ padding: '40px 20px 20px 60px' }}>
+                                <SettingsPage />
                               </div>
                             </ProtectedRoute>
                           }

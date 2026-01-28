@@ -8,8 +8,11 @@ import com.example.nd.model.UploadTask;
 import com.example.nd.service.CoverService;
 import com.example.nd.service.FileSearchService;
 import com.example.nd.service.FileService;
+import com.example.nd.service.StorageAccessor;
 import com.example.nd.service.UploadService;
+import com.example.nd.service.impl.LocalStorageAccessor;
 import com.example.nd.util.AuthUtil;
+import org.springframework.core.io.InputStreamResource;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -132,18 +136,34 @@ public class FileController {
         FileInfo file = fileService.getFileById(fileId);
         if (file != null && file.getDeletedAt() == null) {
             try {
-                Path filePath = Paths.get(file.getStoragePath());
-                Resource resource = new org.springframework.core.io.UrlResource(filePath.toUri());
+                // 根据存储类型选择不同的文件获取方式
+                StorageAccessor accessor = getStorageAccessor(file.getStorageType());
+                
+                InputStream inputStream = accessor.getFile(file.getStoragePath());
+                Resource resource = new InputStreamResource(inputStream) {
+                    @Override
+                    public String getFilename() {
+                        return file.getOriginalName();
+                    }
+                };
 
                 return ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getOriginalName() + "\"")
                         .contentType(MediaType.parseMediaType(file.getMimeType()))
+                        .contentLength(accessor.getSize(file.getStoragePath()))
                         .body(resource);
             } catch (IOException e) {
                 return ResponseEntity.internalServerError().build();
             }
         }
         return ResponseEntity.notFound().build();
+    }
+    
+    private StorageAccessor getStorageAccessor(String storageType) {
+        // 这里可以根据存储类型返回不同的存储访问器
+        // 例如：本地存储、云存储等
+        // 目前默认返回本地存储访问器
+        return new LocalStorageAccessor();
     }
 
     @PutMapping("/{fileId}/move")

@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface StorageService {
     
-    StorageNode createNode(String nodeName, String storageType, String storagePath, Long capacity);
+    StorageNode createNode(String nodeName, String storageType, String storagePath, String connectionConfig, Long capacity);
     
     StorageNode getNodeById(Long nodeId);
     

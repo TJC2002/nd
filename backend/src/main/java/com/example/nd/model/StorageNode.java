@@ -12,6 +12,7 @@ public class StorageNode {
     private String nodeName;
     private String storageType;
     private String storagePath;
+    private String connectionConfig;
     private Long capacity;
     private Long usedSpace;
     private String status;

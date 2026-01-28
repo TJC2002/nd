@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.nd.mapper.UploadPolicyMapper">
+    
+    <select id="getPolicyById" resultType="com.example.nd.model.UploadPolicy">
+        SELECT * FROM upload_policies WHERE id = #{id}
+    </select>
+    
+    <select id="getPoliciesByUserId" resultType="com.example.nd.model.UploadPolicy">
+        SELECT * FROM upload_policies WHERE user_id = #{userId} ORDER BY priority DESC, created_at DESC
+    </select>
+    
+    <select id="getActivePoliciesByUserId" resultType="com.example.nd.model.UploadPolicy">
+        SELECT * FROM upload_policies WHERE user_id = #{userId} AND status = 'active' ORDER BY priority DESC, created_at DESC
+    </select>
+    
+    <insert id="insertPolicy" parameterType="com.example.nd.model.UploadPolicy" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO upload_policies (user_id, policy_name, rule_type, rule_value, min_size, max_size, storage_node_id, priority, status, created_at, updated_at)
+        VALUES (#{userId}, #{policyName}, #{ruleType}, #{ruleValue}, #{minSize}, #{maxSize}, #{storageNodeId}, #{priority}, #{status}, NOW(), NOW())
+    </insert>
+    
+    <update id="updatePolicy" parameterType="com.example.nd.model.UploadPolicy">
+        UPDATE upload_policies
+        SET policy_name = #{policyName}, rule_type = #{ruleType}, rule_value = #{ruleValue}, min_size = #{minSize}, max_size = #{maxSize}, storage_node_id = #{storageNodeId}, priority = #{priority}, status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <update id="updatePolicyStatus">
+        UPDATE upload_policies SET status = #{status}, updated_at = NOW() WHERE id = #{id}
+    </update>
+    
+    <delete id="deletePolicy">
+        DELETE FROM upload_policies WHERE id = #{id}
+    </delete>
+</mapper>

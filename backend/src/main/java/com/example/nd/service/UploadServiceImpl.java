@@ -37,6 +37,9 @@ public class UploadServiceImpl implements UploadService {
     
     @Autowired
     private CoverService coverService;
+    
+    @Autowired
+    private UploadPolicyService uploadPolicyService;
 
     @Value("${app.storage.files-path:./storage/files}")
     private String storageBasePath;
@@ -196,8 +199,15 @@ public class UploadServiceImpl implements UploadService {
             fileMetadata.setStoragePath(finalPath);
             fileMetadata.setReferenceCount(1);
             
-            String storageType = storageService.selectStorageNode(fileMetadata);
-            fileMetadata.setStorageNodeId(getStorageNodeId(storageType));
+            // 根据上传策略选择存储节点
+            Long storageNodeId = uploadPolicyService.selectStorageNodeByPolicy(
+                    uploadTask.getUserId(), fileMetadata, uploadTask.getFileName());
+            
+            if (storageNodeId == null) {
+                throw new RuntimeException("No available storage node found");
+            }
+            
+            fileMetadata.setStorageNodeId(storageNodeId);
             
             fileMetadataMapper.insertFileMetadata(fileMetadata);
             
@@ -226,9 +236,8 @@ public class UploadServiceImpl implements UploadService {
                 System.err.println("Failed to generate cover: " + e.getMessage());
             }
             
-            Long nodeId = getStorageNodeId(storageType);
-            if (nodeId != null) {
-                storageService.updateUsedSpace(nodeId, uploadTask.getFileSize());
+            if (storageNodeId != null) {
+                storageService.updateUsedSpace(storageNodeId, uploadTask.getFileSize());
             }
             
             uploadTask.setStatus("completed");

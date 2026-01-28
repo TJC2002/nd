@@ -14,7 +14,7 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
     if (token) {
-      config.headers.satoken = token
+      config.headers.Authorization = token
     }
     return config
   },
@@ -102,27 +102,22 @@ export const fileApi = {
 }
 
 export const shareApi = {
-  // Create a share link
   createShare: (data) => {
     return api.post('/shares', data)
   },
 
-  // Get user's share records
   getShares: () => {
     return api.get('/shares')
   },
 
-  // Verify share link (Public)
   verifyShare: (shareCode) => {
     return api.get(`/shares/${shareCode}`)
   },
 
-  // Access shared file (verify password if needed)
   accessShare: (shareCode, password) => {
     return api.post(`/shares/${shareCode}/access`, { password })
   },
 
-  // Download shared file
   downloadShare: (shareCode, password) => {
     return api.get(`/shares/${shareCode}/download`, {
       params: { password },
@@ -130,44 +125,62 @@ export const shareApi = {
     })
   },
 
-  // Revoke share
   revokeShare: (shareId) => {
     return api.delete(`/shares/${shareId}`)
   },
 
-  // Get share statistics
   getShareStats: () => {
     return api.get('/shares/stats')
-  }
+  },
 }
 
 export const storageApi = {
-  getNodes: () => {
+  getAllNodes: () => {
     return api.get('/storage/nodes')
-  },
-
-  createNode: (name, parentId) => {
-    return api.post('/storage/nodes', { name, parentId })
   },
 
   getNode: (nodeId) => {
     return api.get(`/storage/nodes/${nodeId}`)
   },
 
-  updateNode: (nodeId, data) => {
-    return api.put(`/storage/nodes/${nodeId}`, data)
+  createNode: (data) => {
+    return api.post('/storage/nodes', data)
   },
 
-  deleteNode: (nodeId) => {
-    return api.delete(`/storage/nodes/${nodeId}`)
+  updateNode: (nodeId, data) => {
+    return api.put(`/storage/nodes/${nodeId}`, data)
   },
 
   updateNodeStatus: (nodeId, status) => {
     return api.put(`/storage/nodes/${nodeId}/status`, { status })
   },
 
+  deleteNode: (nodeId) => {
+    return api.delete(`/storage/nodes/${nodeId}`)
+  },
+
   getStatus: () => {
     return api.get('/storage/status')
+  },
+
+  getActiveNodes: () => {
+    return api.get('/storage/nodes/active')
+  },
+
+  getNodeUsage: (nodeId) => {
+    return api.get(`/storage/nodes/${nodeId}/usage`)
+  },
+
+  testNodeConnection: (nodeId) => {
+    return api.post(`/storage/nodes/${nodeId}/test`)
+  },
+
+  batchUpdateNodeStatus: (nodeIds, status) => {
+    return api.put('/storage/nodes/batch/status', { nodeIds, status })
+  },
+
+  getNodeTypes: () => {
+    return api.get('/storage/node-types')
   },
 }
 

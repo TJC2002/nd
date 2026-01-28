@@ -9,5 +9,6 @@ public class CreateStorageNodeRequest {
     private String nodeName;
     private String storageType;
     private String storagePath;
+    private String connectionConfig;
     private Long capacity;
 }

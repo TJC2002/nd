@@ -90,8 +90,6 @@ const Home = () => {
       setActiveTab('media')
     } else if (path === '/home/shares') {
       setActiveTab('share')
-    } else if (path === '/home/settings') {
-      setActiveTab('settings')
     }
   }, [location.pathname])
 
@@ -112,9 +110,6 @@ const Home = () => {
         break
       case 'share':
         navigate('/home/shares')
-        break
-      case 'settings':
-        navigate('/home/settings')
         break
       default:
         break
@@ -163,14 +158,6 @@ const Home = () => {
         return <MediaCenter />
       case 'share':
         return <ShareList />
-      case 'settings':
-        return (
-          <Placeholder
-            title="系统设置"
-            icon={<SettingsOutlined />}
-            description="管理您的账户、存储空间和应用设置。"
-          />
-        )
       default:
         return <FileManagement />
     }
@@ -316,7 +303,7 @@ const Home = () => {
         >
           <Box sx={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
             <List className="sidebar-menu" sx={{ flex: 1, padding: 0 }}>
-              {['files', 'search', 'transfer', 'media', 'share', 'settings'].map((tab) => (
+              {['files', 'search', 'transfer', 'media', 'share'].map((tab) => (
                 <ListItem key={tab} disablePadding sx={{ display: 'block', mb: 1 }}>
                   <ListItemButton
                     selected={activeTab === tab}
@@ -358,15 +345,13 @@ const Home = () => {
                       {tab === 'transfer' && <SwapHoriz fontSize={sidebarOpen ? "medium" : "large"} />}
                       {tab === 'media' && <PlayCircleFilled fontSize={sidebarOpen ? "medium" : "large"} />}
                       {tab === 'share' && <ShareOutlined fontSize={sidebarOpen ? "medium" : "large"} />}
-                      {tab === 'settings' && <SettingsOutlined fontSize={sidebarOpen ? "medium" : "large"} />}
                     </ListItemIcon>
                     {sidebarOpen && <ListItemText primary={
                         tab === 'files' ? 'Files' :
                         tab === 'search' ? 'Search' :
                         tab === 'transfer' ? 'Transfers' :
                         tab === 'media' ? 'Media' :
-                        tab === 'share' ? 'Shared' :
-                        'Settings'
+                        'Shared'
                     } primaryTypographyProps={{ fontSize: '0.95rem', fontWeight: 500 }} />}
                   </ListItemButton>
                 </ListItem>
@@ -438,7 +423,7 @@ const Home = () => {
           </ListItemIcon>
           <ListItemText>退出登录</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => { handleTabChange('settings'); handleMenuClose(); }}>
+        <MenuItem onClick={() => { navigate('/settings'); handleMenuClose(); }}>
           <ListItemIcon>
             <SettingsOutlined />
           </ListItemIcon>
